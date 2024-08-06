@@ -12,4 +12,4 @@ Ensure you also install Watchmen for your OS `https://facebook.github.io/watchma
 
 `npm install` as root
 
-`npx expo start`
+`npx expo start`/`npx expo run:ios`
