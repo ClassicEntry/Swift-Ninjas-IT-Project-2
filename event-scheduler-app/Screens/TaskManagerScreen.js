@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Text, View, TextInput, Button, FlatList, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import styles from './styles';
 
 const initialTasks = [
