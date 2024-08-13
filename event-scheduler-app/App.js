@@ -4,6 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
+import styles from './styles';
 
 const initialTasks = [
   { id: '1', title: 'Task 1', description: 'Description 1', dueDate: new Date(), recurring: false, status: 'pending', interval: '' },
@@ -187,103 +188,3 @@ export default function App() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 50,
-    paddingHorizontal: 20,
-
-  },
-  currentDateTime: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  addButton: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#eb0c0c',
-    borderRadius: 25,
-    zIndex: 1, // Ensure the button is above other components
-  },
-  addButtonImage: {
-    width: 50,
-    height: 50,
-  },
-  
-  modalView: {
-    margin: 20,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 35,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  input: {
-    width: '100%',
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  },
-  picker: {
-    width: '100%',
-    height: 40,
-    marginBottom: 10,
-  },
-  taskItem: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
-  taskTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  taskDescription: {
-    fontSize: 14,
-    color: '#666',
-  },
-  taskDueDate: {
-    fontSize: 14,
-    color: '#666',
-  },
-  taskStatus: {
-    fontSize: 14,
-    color: '#666',
-  },
-  taskRecurring: {
-    fontSize: 14,
-    color: '#666',
-  },
-  button: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: '#007bff',
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: 'white',
-    textAlign: 'center',
-  },
-});
