@@ -152,8 +152,8 @@ export default function App() {
             <Picker.Item label="Weekly" value="weekly" />
             <Picker.Item label="Fortnightly" value="fortnightly" />
           </Picker>
-          <Button title="Select Due Date" onPress={() => setShowDatePicker(true)} />
-          <Button title="Select Due Time" onPress={() => setShowTimePicker(true)} />
+          <Button  title="Select Due Date" style ={styles.button} onPress={() => setShowDatePicker(true)} />
+          <Button style ={styles.button} title="Select Due Time" onPress={() => setShowTimePicker(true)} />
           {showDatePicker && (
             <DateTimePicker
               value={newTask.dueDate}
@@ -193,6 +193,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 50,
     paddingHorizontal: 20,
+
   },
   currentDateTime: {
     fontSize: 18,
@@ -213,14 +214,15 @@ const styles = StyleSheet.create({
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#eb0c0c',
     borderRadius: 25,
     zIndex: 1, // Ensure the button is above other components
   },
   addButtonImage: {
-    width: 30,
-    height: 30,
+    width: 50,
+    height: 50,
   },
+  
   modalView: {
     margin: 20,
     backgroundColor: 'white',
