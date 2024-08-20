@@ -10,3 +10,7 @@ Run the following the terminal as root
 2. `npm install -g expo-cli`
 3. cd into directory of the project with ```cd event-scheduler-app``` 
 4. `npx expo start`
+
+To run a build physically on the Phone
+1. ```npx expo install expo-dev-client```
+2. ```npx expo run:ios```
