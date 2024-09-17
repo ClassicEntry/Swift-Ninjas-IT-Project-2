@@ -1,98 +1,48 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 
 const styles = StyleSheet.create({
- 
   container: {
     flex: 1,
-    paddingTop: 110, // Adjust this value based on the height of your title container
-    paddingHorizontal: 20,
     backgroundColor: '#f0f0f0',
     fontFamily: 'Helvetica',
   },
-  
   titleContainer: {
     backgroundColor: '#ffffff',
     paddingVertical: 20,
     paddingHorizontal: 20,
-    width: '100%',
     alignItems: 'center',
-    zIndex: 2,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    // Removed marginBottom
-  },
-  
-
-  titleText: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    textAlign: 'center', // Center align the title text
-  },
-  addButton: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 58,
-    height: 58,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ff8c3a',
-    borderRadius: 29,
-    zIndex: 1, // Ensure the button is above other components
-    shadowColor: '#000',
+    elevation: 2, // For Android shadow
+    shadowColor: '#000', // For iOS shadow
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 5,
   },
-  addButtonImage: {
-    width: 60,
-    height: 60,
+  titleText: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
-  
-  modalView: {
-    margin: 20,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 35,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+  currentDateTime: {
+    marginTop: 5,
+    fontSize: 16,
+    color: '#666',
   },
-  
-  input: {
-    width: '100%',
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  },
-  picker: {
-    width: '100%',
-    height: 40,
-    marginBottom: 10,
+  taskList: {
+    paddingHorizontal: 20,
+    paddingBottom: 80, // To prevent the last item from being hidden by the add button
   },
   taskItem: {
     padding: 10,
-    backgroundColor: '#ffffff', // White background for the bubble
-    borderRadius: 20, // More rounded corners for a bubble-like appearance
-    shadowColor: '#000', // Subtle shadow for depth
-    shadowOffset: { width: 0, height: 4 }, // Adjusted for more shadow
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 10, // Larger shadow for a soft bubble effect
-    elevation: 6, // Android elevation for consistent shadow
+    shadowRadius: 10,
+    elevation: 6,
     borderWidth: 1,
-    borderColor: '#e3e3e3', // Optional: Light border for a cleaner look
-  marginTop:20,
+    borderColor: '#e3e3e3',
+    marginTop: 20,
   },
   taskTitle: {
     fontSize: 18,
@@ -129,11 +79,49 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     marginVertical: 5,
+    width: '100%',
   },
-  addbutton_pressed:{
-    color: '#f4f2ef'
-    
-  }
+  addButton: {
+    position: 'absolute',
+    right: 20,
+    bottom: Platform.OS === 'ios' ? 30 : 20,
+    width: 58,
+    height: 58,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ff8c3a',
+    borderRadius: 29,
+    zIndex: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  addButtonImage: {
+    width: 60,
+    height: 60,
+  },
+  modalView: {
+    padding: 20,
+    backgroundColor: 'white',
+    flexGrow: 1,
+    alignItems: 'center',
+    marginTop: 50,
+  },
+  input: {
+    width: '100%',
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+  },
+  picker: {
+    width: '100%',
+    height: 40,
+    marginBottom: 150,
+  },
 });
 
 export default styles;
