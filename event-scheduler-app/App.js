@@ -108,8 +108,10 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.currentDateTime}>Today's Date: {formatDateTime(currentDateTime)}</Text>
-      <Text style={styles.title}>Welcome to the Event Manager</Text>
+      <View style={styles.titleContainer}>
+        <Text style={styles.titleText}>Event Manager</Text>
+        <Text style={styles.currentDateTime}>Today's Date: {formatDateTime(currentDateTime)}</Text>
+      </View>
       <FlatList
         data={tasks}
         renderItem={renderTask}
@@ -153,8 +155,12 @@ export default function App() {
             <Picker.Item label="Weekly" value="weekly" />
             <Picker.Item label="Fortnightly" value="fortnightly" />
           </Picker>
-          <Button  title="Select Due Date" style ={styles.button} onPress={() => setShowDatePicker(true)} />
-          <Button style ={styles.button} title="Select Due Time" onPress={() => setShowTimePicker(true)} />
+          <TouchableOpacity style={styles.customButton} onPress={() => setShowDatePicker(true)}>
+  <Text style={styles.buttonText}>Select Due Date</Text>
+</TouchableOpacity>
+<TouchableOpacity style={styles.customButton} onPress={() => setShowTimePicker(true)}>
+  <Text style={styles.buttonText}>Select Due Time</Text>
+</TouchableOpacity>
           {showDatePicker && (
             <DateTimePicker
               value={newTask.dueDate}
@@ -180,8 +186,12 @@ export default function App() {
             />
           )}
           <Text>Selected Date and Time: {formatDateTime(newTask.dueDate)}</Text>
-          <Button title={editingTaskId ? "Update Task" : "Add Task"} onPress={handleSaveTask} />
-          <Button title="Close" onPress={() => setModalVisible(false)} />
+          <TouchableOpacity style={styles.customButton} onPress={handleSaveTask}>
+  <Text style={styles.buttonText}>{editingTaskId ? "Update Task" : "Add Task"}</Text>
+</TouchableOpacity>
+<TouchableOpacity style={styles.customButton} onPress={() => setModalVisible(false)}>
+  <Text style={styles.buttonText}>Close</Text>
+</TouchableOpacity>
         </View>
       </Modal>
       <StatusBar style="auto" />
