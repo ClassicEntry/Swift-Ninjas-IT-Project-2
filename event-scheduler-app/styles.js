@@ -3,71 +3,76 @@ import { StyleSheet, Platform } from 'react-native';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
-    fontFamily: 'Helvetica',
+    backgroundColor: '#E0F7FA', // Light cyan background
   },
   titleContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#006064', // Dark cyan
     paddingVertical: 20,
     paddingHorizontal: 20,
     alignItems: 'center',
-    elevation: 2, // For Android shadow
-    shadowColor: '#000', // For iOS shadow
+    elevation: 2,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
   titleText: {
-    fontSize: 40,
+    fontSize: 36,
     fontWeight: 'bold',
+    color: '#FFFFFF', // White text
     textAlign: 'center',
   },
   currentDateTime: {
     marginTop: 5,
     fontSize: 16,
-    color: '#666',
+    color: '#B2EBF2', // Light cyan text
   },
   taskList: {
     paddingHorizontal: 20,
-    paddingBottom: 80, // To prevent the last item from being hidden by the add button
+    paddingBottom: 80,
   },
   taskItem: {
-    padding: 10,
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
+    padding: 15,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: '#e3e3e3',
+    borderColor: '#B2EBF2',
     marginTop: 20,
   },
   taskTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
+    color: '#006064',
   },
   taskDescription: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 16,
+    color: '#004D40',
+    marginTop: 5,
   },
   taskDueDate: {
     fontSize: 14,
-    color: '#666',
+    color: '#00796B',
+    marginTop: 5,
   },
   taskStatus: {
     fontSize: 14,
-    color: '#666',
+    color: '#00796B',
+    marginTop: 5,
   },
   taskRecurring: {
     fontSize: 14,
-    color: '#666',
+    color: '#00796B',
+    marginTop: 5,
   },
   button: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: '#4FC1E9',
+    backgroundColor: '#0097A7',
     borderRadius: 5,
   },
   buttonText: {
@@ -75,7 +80,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   customButton: {
-    backgroundColor: '#4FC1E9',
+    backgroundColor: '#00838F',
     padding: 10,
     borderRadius: 5,
     marginVertical: 5,
@@ -85,12 +90,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: Platform.OS === 'ios' ? 30 : 20,
-    width: 58,
-    height: 58,
+    width: 60,
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ff8c3a',
-    borderRadius: 29,
+    backgroundColor: '#00ACC1',
+    borderRadius: 30,
     zIndex: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -99,8 +104,9 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   addButtonImage: {
-    width: 60,
-    height: 60,
+    width: 30,
+    height: 30,
+    tintColor: '#FFFFFF', // White icon
   },
   modalView: {
     padding: 20,
@@ -111,16 +117,18 @@ const styles = StyleSheet.create({
   },
   input: {
     width: '100%',
-    height: 40,
-    borderColor: 'gray',
+    height: 50,
+    borderColor: '#B2EBF2',
     borderWidth: 1,
+    borderRadius: 5,
     marginBottom: 10,
     paddingHorizontal: 10,
+    fontSize: 16,
   },
   picker: {
     width: '100%',
-    height: 40,
-    marginBottom: 150,
+    height: 50,
+    marginBottom: 10,
   },
 });
 
