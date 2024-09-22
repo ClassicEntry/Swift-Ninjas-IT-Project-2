@@ -11,7 +11,6 @@ import styles from './styles';
 import * as SQLite from 'expo-sqlite';
 import * as Device from 'expo-device';
 
-
 export default function App() {
   const [db, setDb] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -50,7 +49,9 @@ export default function App() {
     }
   };
   
-  
+  useEffect(() => {
+    initializeDatabase();
+  }, []);
 
   useEffect(() => {
     const scheduleNotifications = async () => {
@@ -61,12 +62,16 @@ export default function App() {
           if (task.interval === 'daily') {
             triggerConfig = { hour: 9, minute: 0, repeats: true };
           } else if (task.interval === 'weekly') {
-            triggerConfig = { weekday: new Date().getDay(), hour: 9, minute: 0, repeats: true };
+            triggerConfig = { weekday: new Date().getDay(), hour: 9, minute: 0, repeats: true, interval: 7 };
           } else if (task.interval === 'fortnightly') {
             triggerConfig = { weekday: new Date().getDay(), hour: 9, minute: 0, repeats: true, interval: 14 };
+          } else if (task.interval === 'monthly') {
+            triggerConfig = { day: new Date().getDate(), hour: 9, minute: 0, repeats: true, interval: 30 };
+          } else if (task.interval === 'yearly') {
+            triggerConfig = { day: new Date().getDate(), month: new Date().getMonth(), hour: 9, minute: 0, repeats: true, interval: 365 };
           }
           Notifications.scheduleNotificationAsync({
-            content: { title: 'Recurring Task Reminder', body: `${task.title} is due!` },
+            content: { title: 'Recurring Reminder', body: `${task.title} is due!` },
             trigger: triggerConfig
           });
         }
@@ -88,13 +93,13 @@ export default function App() {
     if (editingTaskId !== null) {
       await db.runAsync(
         'UPDATE tasks SET title = ?, description = ?, dueDate = ?, recurring = ?, interval = ?, status = ? WHERE id = ?',
-        [newTask.title, newTask.description, newTask.dueDate.toISOString(), newTask.recurring ? 1 : 0, newTask.interval, 'pending', editingTaskId]
+        [newTask.title, newTask.description, newTask.dueDate.toISOString(), newTask.recurring ? 1 : 0, newTask.interval, 'Pending', editingTaskId]
       );
       setEditingTaskId(null);
     } else {
       await db.runAsync(
         'INSERT INTO tasks (title, description, dueDate, recurring, interval, status) VALUES (?, ?, ?, ?, ?, ?)',
-        [newTask.title, newTask.description, newTask.dueDate.toISOString(), newTask.recurring ? 1 : 0, newTask.interval, 'pending']
+        [newTask.title, newTask.description, newTask.dueDate.toISOString(), newTask.recurring ? 1 : 0, newTask.interval, 'Pending']
       );
     }
     loadTasksFromDB(db);
@@ -102,26 +107,47 @@ export default function App() {
     setModalVisible(false);
   };
   
+  const handleEditTask = async (id) => {
+    try {
+      const result = await db.getFirstAsync('SELECT * FROM tasks WHERE id = ?', [id]);
+      if (result) {
+        setNewTask({
+          title: result.title,
+          description: result.description,
+          dueDate: new Date(result.dueDate),
+          recurring: result.recurring === 1,
+          interval: result.interval
+        });
+        setEditingTaskId(id);
+        setModalVisible(true);
+      } else {
+        console.log('Task not found');
+      }
+    } catch (error) {
+      console.log('Error fetching task:', error);
+    }
+  };
 
-  // const handleEditTask = task => {
-  //   setNewTask({ title: task.title, description: task.description, dueDate: task.dueDate, recurring: task.recurring, interval: task.interval });
-  //   setEditingTaskId(task.id);
-  //   setModalVisible(true);
-  // };
+  const markTaskAsDone = async (id) => {
+    await db.runAsync('UPDATE tasks SET status = ? WHERE id = ?', ['Done', id]);
+    loadTasksFromDB(db);
+  };
 
-  // const markTaskAsDone = id => {
-  //   const updatedTasks = tasks.map(task => task.id === id ? { ...task, status: 'done' } : task);
-  //   setTasks(updatedTasks);
-  // };
+  const handleDeleteTask = (id) => {
+    Alert.alert(
+      'Delete Task',
+      'Are you sure you want to delete this?',
+      [
+        { text: 'Cancel' },
+        { text: 'OK', onPress: () => deleteTask(id) }
+      ]
+    );
+  };
 
   const deleteTask = async (id) => {
     await db.runAsync('DELETE FROM tasks WHERE id = ?', [id]);
     loadTasksFromDB(db);
   };
-  useEffect(() => {
-    initializeDatabase();
-  }, []);
-    
 
   const renderTask = ({ item }) => {
     const dueDate = new Date(item.dueDate);  // Convert to Date object
@@ -134,12 +160,24 @@ export default function App() {
           month: 'long',
           day: 'numeric'
         })}</Text>
+        <Text style={styles.taskDueDate}>Time: {dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+        <Text style={styles.taskDueDate}>Interval: {item.interval}</Text>
         <Text style={styles.taskStatus}>Status: {item.status}</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+          <TouchableOpacity style={styles.button} onPress={() => handleEditTask(item.id)}>
+            <Text style={styles.buttonText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => markTaskAsDone(item.id)}>
+            <Text style={styles.buttonText}>Done</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => handleDeleteTask(item.id)}>
+            <Text style={styles.buttonText}>Delete</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
   
-
   const formatDateTime = (date) => {
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   };
@@ -159,7 +197,11 @@ export default function App() {
       />
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => setModalVisible(true)}
+        onPress={() => {
+          setNewTask({ title: '', description: '', dueDate: new Date(), recurring: false, interval: '' });
+          setEditingTaskId(null);
+          setModalVisible(true);
+        }}
       >
         <Image
           source={require('./icons8-add-button-96.png')}
@@ -195,9 +237,11 @@ export default function App() {
               onValueChange={(itemValue) => setNewTask({ ...newTask, interval: itemValue })}
             >
               <Picker.Item label="Select Interval" value="" />
-              <Picker.Item label="Daily" value="daily" />
-              <Picker.Item label="Weekly" value="weekly" />
-              <Picker.Item label="Fortnightly" value="fortnightly" />
+              <Picker.Item label="Daily" value="Daily" />
+              <Picker.Item label="Weekly" value="Weekly" />
+              <Picker.Item label="Fortnightly" value="Fortnightly" />
+              <Picker.Item label="Monthly" value="Monthly" />
+              <Picker.Item label="Yearly" value="Yearly" />
             </Picker>
             <TouchableOpacity style={styles.customButton} onPress={() => setShowDatePicker(true)}>
               <Text style={styles.buttonText}>Select Due Date</Text>
