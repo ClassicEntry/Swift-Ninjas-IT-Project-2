@@ -129,8 +129,42 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 100,
     marginBottom: 100,
-    
   },
+  list_calendar: {
+    backgroundColor: '#00ACC1',
+    border : 1,
+    borderRadius : 5,
+    flexDirection: 'row', 
+    justifyContent: 'space-around', 
+    marginVertical: 10,
+    padding: 10,
+  },
+  selectedDateContainer: {
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+  },
+  selectedDateText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // taskItem: {
+  //   padding: 10,
+  //   borderBottomWidth: 1,
+  //   borderBottomColor: '#ccc',
+  // },
+  // taskTitle: {
+  //   fontSize: 16,
+  //   fontWeight: 'bold',
+  // },
+  // taskDescription: {
+  //   fontSize: 14,
+  // },
+  noTasksText: {
+    padding: 20,
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#888',
+  }
 });
 
 export default styles;

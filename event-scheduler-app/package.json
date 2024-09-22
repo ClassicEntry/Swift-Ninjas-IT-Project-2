@@ -9,18 +9,19 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo/metro-runtime": "~3.2.3",
+    "@react-native-community/datetimepicker": "8.0.1",
+    "@react-native-picker/picker": "2.7.5",
     "expo": "~51.0.28",
+    "expo-device": "~6.0.2",
+    "expo-notifications": "~0.28.17",
+    "expo-sqlite": "~14.0.6",
     "expo-status-bar": "~1.12.1",
     "react": "18.2.0",
-    "react-native": "0.74.5",
-    "expo-sqlite": "~14.0.6",
-    "expo-notifications": "~0.28.17",
-    "@react-native-picker/picker": "2.7.5",
-    "@react-native-community/datetimepicker": "8.0.1",
-    "expo-device": "~6.0.2",
-    "react-native-web": "~0.19.10",
     "react-dom": "18.2.0",
-    "@expo/metro-runtime": "~3.2.3"
+    "react-native": "0.74.5",
+    "react-native-calendars": "^1.1307.0",
+    "react-native-web": "~0.19.10"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

@@ -9,7 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
 import styles from './styles';
 import * as SQLite from 'expo-sqlite';
-import * as Device from 'expo-device';
+import CalendarView from './CalendarView';  // Adjust the import path as needed
 
 export default function App() {
   const [db, setDb] = useState(null);
@@ -20,6 +20,7 @@ export default function App() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [view, setView] = useState('list');
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -149,9 +150,16 @@ export default function App() {
     loadTasksFromDB(db);
   };
 
+  const handleDateSelect = (date) => {
+    const tasksForDate = tasks.filter(task => task.dueDate.startsWith(date));
+    // Show these tasks in a modal or a separate view
+  };
+  
+  
   const renderTask = ({ item }) => {
     const dueDate = new Date(item.dueDate);  // Convert to Date object
     return (
+      
       <View style={styles.taskItem}>
         <Text style={styles.taskTitle}>{item.title}</Text>
         <Text style={styles.taskDescription}>{item.description}</Text>
@@ -188,13 +196,25 @@ export default function App() {
         <Text style={styles.titleText}>Event Manager</Text>
         <Text style={styles.currentDateTime}>Today's Date: {formatDateTime(currentDateTime)}</Text>
       </View>
-      <FlatList
-        data={tasks}
-        renderItem={renderTask}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.taskList}
-        style={{ flex: 1 }}
-      />
+      <View style={styles.list_calendar}>
+        <TouchableOpacity onPress={() => setView('list')}>
+          <Text>List View</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setView('calendar')}>
+          <Text>Calendar View</Text>
+        </TouchableOpacity>
+      </View>
+      {view === 'list' ? (
+        <FlatList
+          data={tasks}
+          renderItem={renderTask}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.taskList}
+          style={{ flex: 1 }}
+        />
+      ) : (
+        <CalendarView tasks={tasks} onSelectDate={handleDateSelect} />
+      )}
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => {
