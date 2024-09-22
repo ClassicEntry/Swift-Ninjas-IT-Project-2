@@ -73,8 +73,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     padding: 10,
     backgroundColor: '#0097A7',
-    borderRadius: 5,
-    width: '30%',
+    borderRadius: 50,
+    width: '25%',
+    
   },
   buttonText: {
     color: 'white',
@@ -132,8 +133,6 @@ const styles = StyleSheet.create({
   },
   list_calendar: {
     backgroundColor: '#00ACC1',
-    border : 1,
-    borderRadius : 5,
     flexDirection: 'row', 
     justifyContent: 'space-around', 
     marginVertical: 10,
@@ -147,24 +146,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  // taskItem: {
-  //   padding: 10,
-  //   borderBottomWidth: 1,
-  //   borderBottomColor: '#ccc',
-  // },
-  // taskTitle: {
-  //   fontSize: 16,
-  //   fontWeight: 'bold',
-  // },
-  // taskDescription: {
-  //   fontSize: 14,
-  // },
   noTasksText: {
     padding: 20,
     textAlign: 'center',
     fontSize: 16,
     color: '#888',
-  }
+  },
+  options: {
+    color: '#f0f0f0',
+    fontWeight: 'bold',
+    backgroundColor: '#00ACC1',
+    padding: 10,
+    marginVertical: 10,
+  },
 });
 
 export default styles;

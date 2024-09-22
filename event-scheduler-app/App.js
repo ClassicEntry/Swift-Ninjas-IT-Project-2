@@ -20,7 +20,8 @@ export default function App() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
-  const [view, setView] = useState('list');
+  const [view, setView] = useState('list');  // 'list', 'calendar', or 'history'
+  const [buttonsVisible, setButtonsVisible] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -44,11 +45,21 @@ export default function App() {
         status TEXT
       );`);
   
+      await database.execAsync(`CREATE TABLE IF NOT EXISTS history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        taskId INTEGER,
+        oldStatus TEXT,
+        newStatus TEXT,
+        changeDate TEXT,
+        FOREIGN KEY(taskId) REFERENCES tasks(id)
+      );`);
+  
       loadTasksFromDB(database);
     } catch (error) {
       console.log('Error initializing database:', error);
     }
   };
+  
   
   useEffect(() => {
     initializeDatabase();
@@ -129,10 +140,71 @@ export default function App() {
     }
   };
 
-  const markTaskAsDone = async (id) => {
-    await db.runAsync('UPDATE tasks SET status = ? WHERE id = ?', ['Done', id]);
-    loadTasksFromDB(db);
+  const updateTaskStatus = async (id, newStatus) => {
+    try {
+      const oldStatus = await db.getFirstAsync('SELECT status FROM tasks WHERE id = ?', [id]);
+      await db.runAsync('UPDATE tasks SET status = ? WHERE id = ?', [newStatus, id]);
+      await db.runAsync(
+        'INSERT INTO history (taskId, oldStatus, newStatus, changeDate) VALUES (?, ?, ?, ?)',
+        [id, oldStatus.status, newStatus, new Date().toISOString()]
+      );
+      loadTasksFromDB(db);
+    } catch (error) {
+      console.log('Error updating task status:', error);
+    }
   };
+
+  const markTaskAsDone = async (id) => {
+    await updateTaskStatus(id, 'Done');
+  };
+
+  const cancelTask = async (id) => {
+    await updateTaskStatus(id, 'Cancelled');
+  };
+
+  const loadTaskHistory = async () => {
+    try {
+      const result = await db.getAllAsync(`
+        SELECT h.*, t.title 
+        FROM history h 
+        JOIN tasks t ON h.taskId = t.id 
+        ORDER BY h.changeDate DESC
+      `);
+      return result;
+    } catch (error) {
+      console.log('Error loading task history:', error);
+      return [];
+    }
+  };
+  
+  // Add a new component to display task history
+  const TaskHistoryView = () => {
+    const [history, setHistory] = useState([]);
+  
+    useEffect(() => {
+      const fetchHistory = async () => {
+        const historyData = await loadTaskHistory();
+        setHistory(historyData);
+      };
+      fetchHistory();
+    }, []);
+
+    const renderHistoryItem = ({ item }) => (
+      <View style={styles.historyItem}>
+        <Text style={styles.historyTitle}>{item.title}</Text>
+        <Text>Status changed from {item.oldStatus} to {item.newStatus}</Text>
+        <Text>Date: {new Date(item.changeDate).toLocaleString()}</Text>
+      </View>
+    );
+    return (
+    <FlatList
+      data={history}
+      renderItem={renderHistoryItem}
+      keyExtractor={item => item.id.toString()}
+    />
+  );
+};
+
 
   const handleDeleteTask = (id) => {
     Alert.alert(
@@ -171,20 +243,28 @@ export default function App() {
         <Text style={styles.taskDueDate}>Time: {dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
         <Text style={styles.taskDueDate}>Interval: {item.interval}</Text>
         <Text style={styles.taskStatus}>Status: {item.status}</Text>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
-          <TouchableOpacity style={styles.button} onPress={() => handleEditTask(item.id)}>
-            <Text style={styles.buttonText}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={() => markTaskAsDone(item.id)}>
-            <Text style={styles.buttonText}>Done</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={() => handleDeleteTask(item.id)}>
-            <Text style={styles.buttonText}>Delete</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
+        <TouchableOpacity style={styles.options} onPress={() => setButtonsVisible(!buttonsVisible)}>
+          <Text>{buttonsVisible ? "Hide Options" : "Show Options"}</Text>
+        </TouchableOpacity>
+        {buttonsVisible && (
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+    <TouchableOpacity style={styles.button} onPress={() => handleEditTask(item.id)}>
+      <Text style={styles.buttonText}>Edit</Text>
+    </TouchableOpacity>
+    <TouchableOpacity style={styles.button} onPress={() => markTaskAsDone(item.id)}>
+      <Text style={styles.buttonText}>Done</Text>
+    </TouchableOpacity>
+    <TouchableOpacity style={styles.button} onPress={() => cancelTask(item.id)}>
+      <Text style={styles.buttonText}>Cancel</Text>
+    </TouchableOpacity>
+    <TouchableOpacity style={styles.button} onPress={() => handleDeleteTask(item.id)}>
+      <Text style={styles.buttonText}>Delete</Text>
+    </TouchableOpacity>
+  </View>
+)}
+    </View>
+  );
+};
   
   const formatDateTime = (date) => {
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
@@ -203,6 +283,9 @@ export default function App() {
         <TouchableOpacity onPress={() => setView('calendar')}>
           <Text>Calendar View</Text>
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => setView('history')}>
+          <Text>History</Text>
+        </TouchableOpacity>
       </View>
       {view === 'list' ? (
         <FlatList
@@ -212,8 +295,10 @@ export default function App() {
           contentContainerStyle={styles.taskList}
           style={{ flex: 1 }}
         />
-      ) : (
+      ) : view === 'calendar' ? (
         <CalendarView tasks={tasks} onSelectDate={handleDateSelect} />
+      ) : (
+        <TaskHistoryView />
       )}
       <TouchableOpacity
         style={styles.addButton}
