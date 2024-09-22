@@ -122,13 +122,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     marginBottom: 10,
-    paddingHorizontal: 10,
     fontSize: 16,
   },
   picker: {
     width: '100%',
-    height: 50,
-    marginBottom: 10,
+    height: 100,
+    marginBottom: 100,
+    
   },
 });
 
