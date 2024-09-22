@@ -1,102 +1,134 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 50,
-    paddingHorizontal: 20,
-
+    backgroundColor: '#E0F7FA', // Light cyan background
   },
-  currentDateTime: {
-    fontSize: 18,
+  titleContainer: {
+    backgroundColor: '#006064', // Dark cyan
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  titleText: {
+    fontSize: 36,
     fontWeight: 'bold',
-    marginBottom: 10,
+    color: '#FFFFFF', // White text
     textAlign: 'center',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+  currentDateTime: {
+    marginTop: 5,
+    fontSize: 16,
+    color: '#B2EBF2', // Light cyan text
   },
-  addButton: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#eb0c0c',
-    borderRadius: 25,
-    zIndex: 1, // Ensure the button is above other components
-  },
-  addButtonImage: {
-    width: 50,
-    height: 50,
-  },
-  
-  modalView: {
-    margin: 20,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 35,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  input: {
-    width: '100%',
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  },
-  picker: {
-    width: '100%',
-    height: 40,
-    marginBottom: 10,
+  taskList: {
+    paddingHorizontal: 20,
+    paddingBottom: 80,
   },
   taskItem: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    padding: 15,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#B2EBF2',
+    marginTop: 20,
   },
   taskTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
+    color: '#006064',
   },
   taskDescription: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 16,
+    color: '#004D40',
+    marginTop: 5,
   },
   taskDueDate: {
     fontSize: 14,
-    color: '#666',
+    color: '#00796B',
+    marginTop: 5,
   },
   taskStatus: {
     fontSize: 14,
-    color: '#666',
+    color: '#00796B',
+    marginTop: 5,
   },
   taskRecurring: {
     fontSize: 14,
-    color: '#666',
+    color: '#00796B',
+    marginTop: 5,
   },
   button: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: '#007bff',
+    backgroundColor: '#0097A7',
     borderRadius: 5,
   },
   buttonText: {
     color: 'white',
     textAlign: 'center',
+  },
+  customButton: {
+    backgroundColor: '#00838F',
+    padding: 10,
+    borderRadius: 5,
+    marginVertical: 5,
+    width: '100%',
+  },
+  addButton: {
+    position: 'absolute',
+    right: 20,
+    bottom: Platform.OS === 'ios' ? 30 : 20,
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#00ACC1',
+    borderRadius: 30,
+    zIndex: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  addButtonImage: {
+    width: 30,
+    height: 30,
+    tintColor: '#FFFFFF', // White icon
+  },
+  modalView: {
+    padding: 20,
+    backgroundColor: 'white',
+    flexGrow: 1,
+    alignItems: 'center',
+    marginTop: 50,
+  },
+  input: {
+    width: '100%',
+    height: 50,
+    borderColor: '#B2EBF2',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    fontSize: 16,
+  },
+  picker: {
+    width: '100%',
+    height: 50,
+    marginBottom: 10,
   },
 });
 

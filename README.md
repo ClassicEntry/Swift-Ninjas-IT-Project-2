@@ -9,4 +9,5 @@ Run the following the terminal as root
 1. `npm install react-native`
 2. `npm install -g expo-cli`
 3. cd into directory of the project with ```cd event-scheduler-app``` 
-4. `npx expo start`
+4. `npm install`
+5. `npx expo start`
