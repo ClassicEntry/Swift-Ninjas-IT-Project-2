@@ -159,6 +159,13 @@ const styles = StyleSheet.create({
     padding: 10,
     marginVertical: 10,
   },
+  iconButton: {
+    padding: 5,
+  },
+  iconImage: {
+    width: 24,
+    height: 24,
+  },
 });
 
 export default styles;

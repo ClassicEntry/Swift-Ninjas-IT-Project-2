@@ -229,9 +229,8 @@ export default function App() {
   
   
   const renderTask = ({ item }) => {
-    const dueDate = new Date(item.dueDate);  // Convert to Date object
+    const dueDate = new Date(item.dueDate);
     return (
-      
       <View style={styles.taskItem}>
         <Text style={styles.taskTitle}>{item.title}</Text>
         <Text style={styles.taskDescription}>{item.description}</Text>
@@ -248,23 +247,35 @@ export default function App() {
         </TouchableOpacity>
         {buttonsVisible && (
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
-    <TouchableOpacity style={styles.button} onPress={() => handleEditTask(item.id)}>
-      <Text style={styles.buttonText}>Edit</Text>
-    </TouchableOpacity>
-    <TouchableOpacity style={styles.button} onPress={() => markTaskAsDone(item.id)}>
-      <Text style={styles.buttonText}>Done</Text>
-    </TouchableOpacity>
-    <TouchableOpacity style={styles.button} onPress={() => cancelTask(item.id)}>
-      <Text style={styles.buttonText}>Cancel</Text>
-    </TouchableOpacity>
-    <TouchableOpacity style={styles.button} onPress={() => handleDeleteTask(item.id)}>
-      <Text style={styles.buttonText}>Delete</Text>
-    </TouchableOpacity>
-  </View>
-)}
-    </View>
-  );
-};
+            <TouchableOpacity style={styles.iconButton} onPress={() => handleEditTask(item.id)}>
+              <Image
+                source={require('./assets/icons8-edit.svg')}
+                style={styles.iconImage}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton} onPress={() => markTaskAsDone(item.id)}>
+              <Image
+                source={require('./assets/icons8-tick.svg')}
+                style={styles.iconImage}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton} onPress={() => cancelTask(item.id)}>
+              <Image
+                source={require('./assets/red-delete-10437.svg')}
+                style={styles.iconImage}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton} onPress={() => handleDeleteTask(item.id)}>
+              <Image
+                source={require('./assets/red-delete-10437.svg')}
+                style={styles.iconImage}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
   
   const formatDateTime = (date) => {
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
