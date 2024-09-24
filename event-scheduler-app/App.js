@@ -249,19 +249,19 @@ export default function App() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
             <TouchableOpacity style={styles.iconButton} onPress={() => handleEditTask(item.id)}>
               <Image
-                source={require('./assets/icons8-edit.svg')}
+                source={require('./assets/Pencil.png')}
                 style={styles.iconImage}
               />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={() => markTaskAsDone(item.id)}>
               <Image
-                source={require('./assets/icons8-tick.svg')}
+                source={require('./assets/mark-as-done.png')}
                 style={styles.iconImage}
               />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={() => cancelTask(item.id)}>
               <Image
-                source={require('./assets/red-delete-10437.svg')}
+                source={require('./assets/delete.png')}
                 style={styles.iconImage}
               />
             </TouchableOpacity>
