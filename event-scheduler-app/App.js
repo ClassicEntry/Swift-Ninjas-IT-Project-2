@@ -22,6 +22,7 @@ export default function App() {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [view, setView] = useState('list');  // 'list', 'calendar', or 'history'
   const [buttonsVisible, setButtonsVisible] = useState(false);
+  const [visibleOptionsTaskId, setVisibleOptionsTaskId] = useState(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -230,6 +231,8 @@ export default function App() {
   
   const renderTask = ({ item }) => {
     const dueDate = new Date(item.dueDate);
+    const isOptionsVisible = visibleOptionsTaskId === item.id;
+
     return (
       <View style={styles.taskItem}>
         <Text style={styles.taskTitle}>{item.title}</Text>
@@ -242,10 +245,13 @@ export default function App() {
         <Text style={styles.taskDueDate}>Time: {dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
         <Text style={styles.taskDueDate}>Interval: {item.interval}</Text>
         <Text style={styles.taskStatus}>Status: {item.status}</Text>
-        <TouchableOpacity style={styles.options} onPress={() => setButtonsVisible(!buttonsVisible)}>
-          <Text>{buttonsVisible ? "Hide Options" : "Show Options"}</Text>
+        <TouchableOpacity 
+          style={styles.options} 
+          onPress={() => setVisibleOptionsTaskId(isOptionsVisible ? null : item.id)}
+        >
+          <Text>{isOptionsVisible ? "Hide Options" : "Show Options"}</Text>
         </TouchableOpacity>
-        {buttonsVisible && (
+        {isOptionsVisible && (
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 5}}>
             <TouchableOpacity style={styles.iconButton} onPress={() => handleEditTask(item.id)}>
               <Image
@@ -276,6 +282,7 @@ export default function App() {
       </View>
     );
   };
+
   
   const formatDateTime = (date) => {
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
