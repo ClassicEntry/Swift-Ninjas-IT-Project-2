@@ -267,7 +267,7 @@ export default function App() {
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={() => handleDeleteTask(item.id)}>
               <Image
-                source={require('./assets/red-delete-10437.svg')}
+                source={require('./assets/x.png')}
                 style={styles.iconImage}
               />
             </TouchableOpacity>
