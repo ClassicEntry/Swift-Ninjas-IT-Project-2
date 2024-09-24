@@ -246,7 +246,7 @@ export default function App() {
           <Text>{buttonsVisible ? "Hide Options" : "Show Options"}</Text>
         </TouchableOpacity>
         {buttonsVisible && (
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 5}}>
             <TouchableOpacity style={styles.iconButton} onPress={() => handleEditTask(item.id)}>
               <Image
                 source={require('./assets/Pencil.png')}
@@ -261,13 +261,13 @@ export default function App() {
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={() => cancelTask(item.id)}>
               <Image
-                source={require('./assets/delete.png')}
+                source={require('./assets/x.png')}
                 style={styles.iconImage}
               />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={() => handleDeleteTask(item.id)}>
               <Image
-                source={require('./assets/x.png')}
+                source={require('./assets/delete.png')}
                 style={styles.iconImage}
               />
             </TouchableOpacity>

@@ -161,6 +161,9 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 5,
+    borderRadius: 5,
+    borderWidth: 1,
+    backgroundColor: '#00ACC1',
   },
   iconImage: {
     width: 24,
