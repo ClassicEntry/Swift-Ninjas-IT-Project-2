@@ -7,11 +7,20 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
-import styles from './styles';
+import styles from './app_components/styles';
 import * as SQLite from 'expo-sqlite';
-import CalendarView from './CalendarView';  // Adjust the import path as needed
+import CalendarView from './app_components/CalendarView'; 
+import { NavigationContainer } from '@react-navigation/native';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import CompletedTasksScreen from './app_components/CompletedTasksScreen';
+import SettingsScreen from './app_components/SettingsScreen';
+import { ThemeProvider, useTheme } from './app_components/ThemeContext';
 
-export default function App() {
+
+const Drawer = createDrawerNavigator();
+
+function MainScreen() {
+  const { theme } = useTheme();
   const [db, setDb] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState({ title: '', description: '', dueDate: new Date(), recurring: false, interval: '' });
@@ -20,8 +29,7 @@ export default function App() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
-  const [view, setView] = useState('list');  // 'list', 'calendar', or 'history'
-  const [buttonsVisible, setButtonsVisible] = useState(false);
+  const [view, setView] = useState('list');
   const [visibleOptionsTaskId, setVisibleOptionsTaskId] = useState(null);
 
   useEffect(() => {
@@ -289,9 +297,9 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.titleContainer}>
-        <Text style={styles.titleText}>Event Manager</Text>
+      <Text style={[styles.titleText, { color: theme.text }]}>Event Manager</Text>
         <Text style={styles.currentDateTime}>Today's Date: {formatDateTime(currentDateTime)}</Text>
       </View>
       <View style={styles.list_calendar}>
@@ -408,5 +416,20 @@ export default function App() {
       </Modal>
       <StatusBar style="auto" />
     </SafeAreaView>
+  );
+}
+
+// The structure of the app is defined using the NavigationContainer and DrawerNavigator components
+export default function App() {
+  return (
+    <ThemeProvider>
+      <NavigationContainer>
+        <Drawer.Navigator initialRouteName="Main">
+          <Drawer.Screen name="Main" component={MainScreen} />
+          <Drawer.Screen name="Completed Tasks" component={CompletedTasksScreen} />
+          <Drawer.Screen name="Settings" component={SettingsScreen} />
+        </Drawer.Navigator>
+      </NavigationContainer>
+    </ThemeProvider>
   );
 }

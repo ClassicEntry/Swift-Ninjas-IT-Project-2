@@ -1,12 +1,12 @@
 import { StyleSheet, Platform } from 'react-native';
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E0F7FA', // Light cyan background
+    backgroundColor: theme.background,
   },
   titleContainer: {
-    backgroundColor: '#006064', // Dark cyan
+    backgroundColor: theme.primary,
     paddingVertical: 20,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -19,13 +19,13 @@ const styles = StyleSheet.create({
   titleText: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#FFFFFF', // White text
+    color: '#FFFFFF',
     textAlign: 'center',
   },
   currentDateTime: {
     marginTop: 5,
     fontSize: 16,
-    color: '#B2EBF2', // Light cyan text
+    color: theme.background,
   },
   taskList: {
     paddingHorizontal: 20,
@@ -41,48 +41,47 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#B2EBF2',
+    borderColor: theme.primary,
     marginTop: 20,
   },
   taskTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#006064',
+    color: theme.primary,
   },
   taskDescription: {
     fontSize: 16,
-    color: '#004D40',
+    color: theme.text,
     marginTop: 5,
   },
   taskDueDate: {
     fontSize: 14,
-    color: '#00796B',
+    color: theme.text,
     marginTop: 5,
   },
   taskStatus: {
     fontSize: 14,
-    color: '#00796B',
+    color: theme.text,
     marginTop: 5,
   },
   taskRecurring: {
     fontSize: 14,
-    color: '#00796B',
+    color: theme.text,
     marginTop: 5,
   },
   button: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: '#0097A7',
+    backgroundColor: theme.primary,
     borderRadius: 50,
     width: '25%',
-    
   },
   buttonText: {
     color: 'white',
     textAlign: 'center',
   },
   customButton: {
-    backgroundColor: '#00838F',
+    backgroundColor: theme.primary,
     padding: 10,
     borderRadius: 5,
     marginVertical: 5,
@@ -96,7 +95,7 @@ const styles = StyleSheet.create({
     height: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#00ACC1',
+    backgroundColor: theme.primary,
     borderRadius: 30,
     zIndex: 1,
     shadowColor: '#000',
@@ -108,11 +107,11 @@ const styles = StyleSheet.create({
   addButtonImage: {
     width: 30,
     height: 30,
-    tintColor: '#FFFFFF', // White icon
+    tintColor: '#FFFFFF',
   },
   modalView: {
     padding: 20,
-    backgroundColor: 'white',
+    backgroundColor: theme.background,
     flexGrow: 1,
     alignItems: 'center',
     marginTop: 50,
@@ -120,42 +119,45 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     height: 50,
-    borderColor: '#B2EBF2',
+    borderColor: theme.primary,
     borderWidth: 1,
     borderRadius: 5,
     marginBottom: 10,
     fontSize: 16,
+    color: theme.text,
   },
   picker: {
     width: '100%',
     height: 100,
     marginBottom: 100,
+    color: theme.text,
   },
   list_calendar: {
-    backgroundColor: '#00ACC1',
-    flexDirection: 'row', 
-    justifyContent: 'space-around', 
+    backgroundColor: theme.primary,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     marginVertical: 10,
     padding: 10,
   },
   selectedDateContainer: {
     padding: 10,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.background,
   },
   selectedDateText: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: theme.text,
   },
   noTasksText: {
     padding: 20,
     textAlign: 'center',
     fontSize: 16,
-    color: '#888',
+    color: theme.text,
   },
   options: {
-    color: '#f0f0f0',
+    color: theme.background,
     fontWeight: 'bold',
-    backgroundColor: '#00ACC1',
+    backgroundColor: theme.primary,
     padding: 10,
     marginVertical: 10,
   },
@@ -163,12 +165,13 @@ const styles = StyleSheet.create({
     padding: 5,
     borderRadius: 5,
     borderWidth: 1,
-    backgroundColor: '#00ACC1',
+    backgroundColor: theme.primary,
   },
   iconImage: {
     width: 24,
     height: 24,
+    tintColor: '#FFFFFF',
   },
 });
 
-export default styles;
+export default createStyles;
