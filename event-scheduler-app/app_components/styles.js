@@ -1,12 +1,12 @@
 import { StyleSheet, Platform } from 'react-native';
 
-const createStyles = (theme) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.background,
+    backgroundColor: '#E0F7FA', // Light cyan background
   },
   titleContainer: {
-    backgroundColor: theme.primary,
+    backgroundColor: '#006064', // Dark cyan
     paddingVertical: 20,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -19,13 +19,13 @@ const createStyles = (theme) => StyleSheet.create({
   titleText: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#FFFFFF', // White text
     textAlign: 'center',
   },
   currentDateTime: {
     marginTop: 5,
     fontSize: 16,
-    color: theme.background,
+    color: '#B2EBF2', // Light cyan text
   },
   taskList: {
     paddingHorizontal: 20,
@@ -41,47 +41,48 @@ const createStyles = (theme) => StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
     borderWidth: 1,
-    borderColor: theme.primary,
+    borderColor: '#B2EBF2',
     marginTop: 20,
   },
   taskTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: theme.primary,
+    color: '#006064',
   },
   taskDescription: {
     fontSize: 16,
-    color: theme.text,
+    color: '#004D40',
     marginTop: 5,
   },
   taskDueDate: {
     fontSize: 14,
-    color: theme.text,
+    color: '#00796B',
     marginTop: 5,
   },
   taskStatus: {
     fontSize: 14,
-    color: theme.text,
+    color: '#00796B',
     marginTop: 5,
   },
   taskRecurring: {
     fontSize: 14,
-    color: theme.text,
+    color: '#00796B',
     marginTop: 5,
   },
   button: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: theme.primary,
+    backgroundColor: '#0097A7',
     borderRadius: 50,
     width: '25%',
+    
   },
   buttonText: {
     color: 'white',
     textAlign: 'center',
   },
   customButton: {
-    backgroundColor: theme.primary,
+    backgroundColor: '#00838F',
     padding: 10,
     borderRadius: 5,
     marginVertical: 5,
@@ -95,7 +96,7 @@ const createStyles = (theme) => StyleSheet.create({
     height: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.primary,
+    backgroundColor: '#00ACC1',
     borderRadius: 30,
     zIndex: 1,
     shadowColor: '#000',
@@ -107,11 +108,11 @@ const createStyles = (theme) => StyleSheet.create({
   addButtonImage: {
     width: 30,
     height: 30,
-    tintColor: '#FFFFFF',
+    tintColor: '#FFFFFF', // White icon
   },
   modalView: {
     padding: 20,
-    backgroundColor: theme.background,
+    backgroundColor: 'white',
     flexGrow: 1,
     alignItems: 'center',
     marginTop: 50,
@@ -119,45 +120,42 @@ const createStyles = (theme) => StyleSheet.create({
   input: {
     width: '100%',
     height: 50,
-    borderColor: theme.primary,
+    borderColor: '#B2EBF2',
     borderWidth: 1,
     borderRadius: 5,
     marginBottom: 10,
     fontSize: 16,
-    color: theme.text,
   },
   picker: {
     width: '100%',
     height: 100,
     marginBottom: 100,
-    color: theme.text,
   },
   list_calendar: {
-    backgroundColor: theme.primary,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    backgroundColor: '#00ACC1',
+    flexDirection: 'row', 
+    justifyContent: 'space-around', 
     marginVertical: 10,
     padding: 10,
   },
   selectedDateContainer: {
     padding: 10,
-    backgroundColor: theme.background,
+    backgroundColor: '#f0f0f0',
   },
   selectedDateText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: theme.text,
   },
   noTasksText: {
     padding: 20,
     textAlign: 'center',
     fontSize: 16,
-    color: theme.text,
+    color: '#888',
   },
   options: {
-    color: theme.background,
+    color: '#f0f0f0',
     fontWeight: 'bold',
-    backgroundColor: theme.primary,
+    backgroundColor: '#00ACC1',
     padding: 10,
     marginVertical: 10,
   },
@@ -165,13 +163,12 @@ const createStyles = (theme) => StyleSheet.create({
     padding: 5,
     borderRadius: 5,
     borderWidth: 1,
-    backgroundColor: theme.primary,
+    backgroundColor: '#00ACC1',
   },
   iconImage: {
     width: 24,
     height: 24,
-    tintColor: '#FFFFFF',
   },
 });
 
-export default createStyles;
+export default styles;
