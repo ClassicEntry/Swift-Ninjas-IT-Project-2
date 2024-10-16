@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "TaskManagerApp",
-    "slug": "TaskManagerApp",
+    "name": "EventScheduler",
+    "slug": "EventScheduler",
     "version": "1.0.0",
     "jsEngine": "jsc",
     "orientation": "portrait",
