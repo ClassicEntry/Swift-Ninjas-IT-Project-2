@@ -169,6 +169,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
   },
+  ninjaLogo: {
+    width: 50, // Set the width of the image
+    height: 50, // Set the height of the image
+    position: 'absolute', // Position it in the top right corner
+    right: 10, // Adjust the distance from the right edge
+    top: 20, // Adjust the distance from the top edge
+ },
+  
 });
 
 export default styles;

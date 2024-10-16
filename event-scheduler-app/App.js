@@ -301,6 +301,11 @@ function MainScreen() {
       <View style={styles.titleContainer}>
       <Text style={[styles.titleText, { color: theme.text }]}>Event Manager</Text>
         <Text style={styles.currentDateTime}>Today's Date: {formatDateTime(currentDateTime)}</Text>
+        <Image
+          source={require('./assets/NinjaLogo.png')} // Make sure the path is correct
+          style={styles.ninjaLogo} // Define this style for proper positioning
+        />
+      
       </View>
       <View style={styles.list_calendar}>
         <TouchableOpacity onPress={() => setView('list')}>
