@@ -12,6 +12,7 @@ import {
   FlatList,
   Alert,
   Image,
+  StyleSheet,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
@@ -25,7 +26,6 @@ import { createDrawerNavigator } from "@react-navigation/drawer";
 import CompletedTasksScreen from "./app_components/CompletedTasksScreen";
 import SettingsScreen from "./app_components/SettingsScreen";
 import { ThemeProvider, useTheme } from "./app_components/ThemeContext";
-import * as DocumentPicker from "expo-document-picker";
 import TaskHistoryView from "./app_components/TaskHistoryView";
 
 const Drawer = createDrawerNavigator();
@@ -48,16 +48,12 @@ function MainScreen() {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [view, setView] = useState("list");
   const [visibleOptionsTaskId, setVisibleOptionsTaskId] = useState(null);
-  const [attachments, setAttachments] = useState([]);
-  const [showNextSevenDays, setShowNextSevenDays] = useState(false);
+  const [expandedTasks, setExpandedTasks] = useState({});
 
   useEffect(() => {
-    initializeDatabase();
-    scheduleNotifications();
     const interval = setInterval(() => {
       setCurrentDateTime(new Date());
-      checkOverdueTasks();
-    }, 60000); // Check every minute
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -73,18 +69,15 @@ function MainScreen() {
         dueDate TEXT,
         recurring INTEGER,
         interval TEXT,
-        status TEXT,
-        attachments TEXT
+        status TEXT
       );`);
 
-      // Update the history table schema
       await database.execAsync(`CREATE TABLE IF NOT EXISTS history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         taskId INTEGER,
         oldStatus TEXT,
         newStatus TEXT,
         changeDate TEXT,
-        changeType TEXT,
         FOREIGN KEY(taskId) REFERENCES tasks(id)
       );`);
 
@@ -94,103 +87,211 @@ function MainScreen() {
     }
   };
 
-  const scheduleNotifications = async () => {
-    await Notifications.requestPermissionsAsync();
-    tasks.forEach((task) => {
-      if (task.recurring) {
-        let triggerConfig = {};
-        if (task.interval === "daily") {
-          triggerConfig = { hour: 9, minute: 0, repeats: true };
-        } else if (task.interval === "weekly") {
-          triggerConfig = {
-            weekday: new Date().getDay(),
-            hour: 9,
-            minute: 0,
-            repeats: true,
-            interval: 7,
-          };
-        } else if (task.interval === "fortnightly") {
-          triggerConfig = {
-            weekday: new Date().getDay(),
-            hour: 9,
-            minute: 0,
-            repeats: true,
-            interval: 14,
-          };
-        } else if (task.interval === "monthly") {
-          triggerConfig = {
-            day: new Date().getDate(),
-            hour: 9,
-            minute: 0,
-            repeats: true,
-            interval: 30,
-          };
-        } else if (task.interval === "yearly") {
-          triggerConfig = {
-            day: new Date().getDate(),
-            month: new Date().getMonth(),
-            hour: 9,
-            minute: 0,
-            repeats: true,
-            interval: 365,
-          };
+  useEffect(() => {
+    initializeDatabase();
+  }, []);
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+
+  useEffect(() => {
+    const scheduleNotifications = async () => {
+      await Notifications.requestPermissionsAsync();
+      tasks.forEach((task) => {
+        if (task.recurring) {
+          let triggerConfig = {};
+          if (task.interval === "daily") {
+            triggerConfig = { hour: 9, minute: 0, repeats: true };
+          } else if (task.interval === "weekly") {
+            triggerConfig = {
+              weekday: new Date().getDay(),
+              hour: 9,
+              minute: 0,
+              repeats: true,
+              interval: 7,
+            };
+          } else if (task.interval === "fortnightly") {
+            triggerConfig = {
+              weekday: new Date().getDay(),
+              hour: 9,
+              minute: 0,
+              repeats: true,
+              interval: 14,
+            };
+          } else if (task.interval === "monthly") {
+            triggerConfig = {
+              day: new Date().getDate(),
+              hour: 9,
+              minute: 0,
+              repeats: true,
+              interval: 30,
+            };
+          } else if (task.interval === "yearly") {
+            triggerConfig = {
+              day: new Date().getDate(),
+              month: new Date().getMonth(),
+              hour: 9,
+              minute: 0,
+              repeats: true,
+              interval: 365,
+            };
+          }
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: "Recurring Reminder",
+              body: `${task.title} is due!`,
+            },
+            trigger: triggerConfig,
+          });
         }
-        Notifications.scheduleNotificationAsync({
-          content: {
-            title: "Recurring Reminder",
-            body: `${task.title} is due!`,
-          },
-          trigger: triggerConfig,
-        });
-      }
-    });
-  };
+      });
+    };
+    scheduleNotifications();
+  }, [tasks]);
 
   const loadTasksFromDB = async (database) => {
     try {
-      const result = await database.getAllAsync(
-        "SELECT * FROM tasks ORDER BY dueDate ASC"
-      );
-      const formattedTasks = result.map((task) => ({
-        ...task,
-        dueDate: new Date(task.dueDate),
-        recurring: task.recurring === 1,
-        attachments: JSON.parse(task.attachments || "[]"),
-      }));
-      setTasks(formattedTasks);
-      console.log("Tasks loaded:", formattedTasks);
+      const result = await database.getAllAsync("SELECT * FROM tasks");
+      setTasks(sortTasksByDueDate(result));
     } catch (error) {
-      console.error("Error loading tasks:", error);
+      console.log("Error loading tasks:", error);
     }
   };
 
+  // Function to schedule a notification for a task
+  const scheduleTaskNotification = async (task) => {
+    const now = new Date();
+    const dueDate = new Date(task.dueDate);
+    const notificationTime = new Date(dueDate.getTime() - 30 * 60000); // 30 minutes before due time
+
+    // If the notification time is in the past, don't schedule it
+    if (notificationTime <= now) {
+      console.log(`Skipping notification for overdue task: ${task.title}`);
+      return;
+    }
+
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Task Due Soon",
+          body: `Your task "${task.title}" is due in 30 minutes!`,
+        },
+        trigger: notificationTime,
+      });
+      console.log(`Notification scheduled for task: ${task.title}`);
+    } catch (error) {
+      console.error("Failed to schedule notification:", error);
+    }
+  };
+
+  // Function to check for overdue tasks and send notifications
+  const checkOverdueTasks = async () => {
+    const now = new Date();
+    const overdueTasks = tasks.filter(
+      (task) => new Date(task.dueDate) < now && task.status !== "Done"
+    );
+
+    for (let task of overdueTasks) {
+      try {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: "Overdue Task",
+            body: `Your task "${task.title}" is overdue!`,
+          },
+          trigger: null, // Send immediately
+        });
+        console.log(
+          `Immediate notification sent for overdue task: ${task.title}`
+        );
+      } catch (error) {
+        console.error("Failed to send immediate notification:", error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const requestPermissions = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== "granted") {
+        alert("You need to enable notifications to use this feature.");
+      }
+    };
+
+    requestPermissions();
+
+    // Schedule notifications for existing tasks
+    tasks.forEach(scheduleTaskNotification);
+
+    // Calculate the initial delay until 9 AM the next day
+    const now = new Date();
+    const next9AM = new Date();
+    next9AM.setHours(9, 0, 0, 0);
+    if (now >= next9AM) {
+      next9AM.setDate(next9AM.getDate() + 1);
+    }
+    const initialDelay = next9AM - now;
+
+    // Set a timeout to check for overdue tasks at 9 AM the next day
+    const timeoutId = setTimeout(() => {
+      checkOverdueTasks();
+      // Set an interval to check for overdue tasks every 24 hours
+      const overdueCheckInterval = setInterval(checkOverdueTasks, 86400000); // Check every 24 hours
+      return () => clearInterval(overdueCheckInterval);
+    }, initialDelay);
+
+    return () => clearTimeout(timeoutId);
+  }, [tasks]);
+
   const handleSaveTask = async () => {
     try {
-      const taskData = {
-        title: newTask.title,
-        description: newTask.description,
-        dueDate: newTask.dueDate.toISOString(),
-        recurring: newTask.recurring ? 1 : 0,
-        interval: newTask.interval || "",
-        status: "Pending",
-        attachments: JSON.stringify(attachments),
-      };
-
-      let result;
       if (editingTaskId !== null) {
-        result = await db.runAsync(
-          "UPDATE tasks SET title = ?, description = ?, dueDate = ?, recurring = ?, interval = ?, status = ?, attachments = ? WHERE id = ?",
-          [...Object.values(taskData), editingTaskId]
+        // Editing an existing task
+        await db.runAsync(
+          "UPDATE tasks SET title = ?, description = ?, dueDate = ?, recurring = ?, interval = ?, status = ? WHERE id = ?",
+          [
+            newTask.title,
+            newTask.description,
+            newTask.dueDate.toISOString(),
+            newTask.recurring ? 1 : 0,
+            newTask.interval,
+            "Pending",
+            editingTaskId,
+          ]
         );
-        await addToHistory(editingTaskId, "Edited");
-        console.log("Task updated:", result);
+
+        // Record the edit in history
+        await db.runAsync(
+          "INSERT INTO history (taskId, oldStatus, newStatus, changeDate) VALUES (?, ?, ?, ?)",
+          [editingTaskId, "Edited", "Edited", new Date().toISOString()]
+        );
+
+        console.log(`Task updated with ID: ${editingTaskId}`);
       } else {
-        result = await db.runAsync(
-          "INSERT INTO tasks (title, description, dueDate, recurring, interval, status, attachments) VALUES (?, ?, ?, ?, ?, ?, ?)",
-          Object.values(taskData)
+        // Creating a new task
+        const result = await db.runAsync(
+          "INSERT INTO tasks (title, description, dueDate, recurring, interval, status) VALUES (?, ?, ?, ?, ?, ?)",
+          [
+            newTask.title,
+            newTask.description,
+            newTask.dueDate.toISOString(),
+            newTask.recurring ? 1 : 0,
+            newTask.interval,
+            "Pending",
+          ]
         );
-        await addToHistory(result.insertId, "Created");
-        console.log("Task created:", result);
+
+        // Record the creation in history
+        await db.runAsync(
+          "INSERT INTO history (taskId, oldStatus, newStatus, changeDate) VALUES (?, ?, ?, ?)",
+          [result.insertId, "Created", "Pending", new Date().toISOString()]
+        );
+
+        console.log(`New task created with ID: ${result.insertId}`);
       }
 
       await loadTasksFromDB(db);
@@ -201,66 +302,27 @@ function MainScreen() {
         recurring: false,
         interval: "",
       });
-      setAttachments([]);
+      setEditingTaskId(null); // Reset editingTaskId after saving
       setModalVisible(false);
-      scheduleNotification(taskData);
     } catch (error) {
       console.error("Error saving task:", error);
       Alert.alert("Error", "Failed to save task. Please try again.");
     }
   };
 
-  const addToHistory = async (taskId, changeType) => {
-    try {
-      await db.runAsync(
-        "INSERT INTO history (taskId, oldStatus, newStatus, changeDate, changeType) VALUES (?, ?, ?, ?, ?)",
-        [taskId, "N/A", "N/A", new Date().toISOString(), changeType]
-      );
-      console.log("History added for task:", taskId, changeType);
-    } catch (error) {
-      console.error("Error adding to history:", error);
-    }
-  };
-
-  const scheduleNotification = (task) => {
-    Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Task Reminder",
-        body: `${task.title} is due soon!`,
-      },
-      trigger: { date: new Date(task.dueDate) },
-    });
-  };
-
-  // Update checkOverdueTasks function
-  const checkOverdueTasks = () => {
-    const now = new Date();
-    tasks.forEach((task) => {
-      if (new Date(task.dueDate) < now && task.status === "Pending") {
-        updateTaskStatus(task.id, "Overdue");
-        Notifications.scheduleNotificationAsync({
-          content: {
-            title: "Task Overdue",
-            body: `${task.title} is overdue!`,
-          },
-          trigger: null,
-        });
-      }
-    });
-  };
-
-  const handleTaskPress = (task) => {
-    // Implement the logic for handling task press in calendar view
-    console.log("Task pressed:", task);
-    // You might want to open a modal or navigate to a task details screen
-  };
-
   const handleEditTask = async (id) => {
+    if (!db) {
+      console.error("Database not initialized");
+      Alert.alert("Error", "Database not ready. Please try again later.");
+      return;
+    }
+
     try {
       const result = await db.getFirstAsync(
         "SELECT * FROM tasks WHERE id = ?",
         [id]
       );
+
       if (result) {
         setNewTask({
           title: result.title,
@@ -273,26 +335,27 @@ function MainScreen() {
         setModalVisible(true);
       } else {
         console.log("Task not found");
+        Alert.alert("Error", "Task not found.");
       }
     } catch (error) {
-      console.log("Error fetching task:", error);
+      console.error("Error fetching task:", error);
+      Alert.alert("Error", "Failed to load task details. Please try again.");
     }
   };
 
   const updateTaskStatus = async (id, newStatus) => {
     try {
-      const oldStatusResult = await db.getFirstAsync(
+      const oldStatus = await db.getFirstAsync(
         "SELECT status FROM tasks WHERE id = ?",
         [id]
       );
-      const oldStatus = oldStatusResult.status;
       await db.runAsync("UPDATE tasks SET status = ? WHERE id = ?", [
         newStatus,
         id,
       ]);
       await db.runAsync(
-        "INSERT INTO history (taskId, oldStatus, newStatus, changeDate, changeType) VALUES (?, ?, ?, ?, ?)",
-        [id, oldStatus, newStatus, new Date().toISOString(), "StatusChange"]
+        "INSERT INTO history (taskId, oldStatus, newStatus, changeDate) VALUES (?, ?, ?, ?)",
+        [id, oldStatus.status, newStatus, new Date().toISOString()]
       );
       loadTasksFromDB(db);
     } catch (error) {
@@ -300,8 +363,12 @@ function MainScreen() {
     }
   };
 
-  const archiveTask = async (id) => {
-    await updateTaskStatus(id, "Archived");
+  const sortTasksByDueDate = (tasks) => {
+    return [...tasks].sort((a, b) => {
+      const dateA = new Date(a.dueDate);
+      const dateB = new Date(b.dueDate);
+      return dateA - dateB;
+    });
   };
 
   const markTaskAsDone = async (id) => {
@@ -312,14 +379,19 @@ function MainScreen() {
     await updateTaskStatus(id, "Cancelled");
   };
 
+  // Function to load task history
   const loadTaskHistory = async () => {
     try {
       const result = await db.getAllAsync(`
-        SELECT h.*, t.title 
-        FROM history h 
-        JOIN tasks t ON h.taskId = t.id 
-        ORDER BY h.changeDate DESC
-      `);
+      SELECT h.*, t.title, t.description, 
+             CASE 
+               WHEN t.id IS NULL THEN 'Deleted'
+               ELSE t.status
+             END AS current_status
+      FROM history h 
+      LEFT JOIN tasks t ON h.taskId = t.id 
+      ORDER BY h.changeDate DESC
+    `);
       return result;
     } catch (error) {
       console.log("Error loading task history:", error);
@@ -342,17 +414,25 @@ function MainScreen() {
     const renderHistoryItem = ({ item }) => (
       <View style={styles.historyItem}>
         <Text style={styles.historyTitle}>{item.title}</Text>
-        <Text>
+        <Text style={styles.historyDescription}>{item.description}</Text>
+        <Text style={styles.historyStatus}>
           Status changed from {item.oldStatus} to {item.newStatus}
         </Text>
-        <Text>Date: {new Date(item.changeDate).toLocaleString()}</Text>
+        <Text style={styles.historyDate}>
+          Date: {new Date(item.changeDate).toLocaleString()}
+        </Text>
+        <Text style={styles.currentStatus}>
+          Current Status: {item.current_status}
+        </Text>
       </View>
     );
+
     return (
       <FlatList
         data={history}
         renderItem={renderHistoryItem}
         keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.historyList}
       />
     );
   };
@@ -365,61 +445,73 @@ function MainScreen() {
   };
 
   const deleteTask = async (id) => {
-    await db.runAsync("DELETE FROM tasks WHERE id = ?", [id]);
-    await addToHistory(id, "Deleted");
-    loadTasksFromDB(db);
-  };
-
-  const handleAttachment = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync();
-      if (result.type === "success") {
-        setAttachments([...attachments, result]);
-      }
+      const oldStatus = await db.getFirstAsync(
+        "SELECT status FROM tasks WHERE id = ?",
+        [id]
+      );
+      await db.runAsync("DELETE FROM tasks WHERE id = ?", [id]);
+      await db.runAsync(
+        "INSERT INTO history (taskId, oldStatus, newStatus, changeDate) VALUES (?, ?, ?, ?)",
+        [id, oldStatus.status, "Deleted", new Date().toISOString()]
+      );
+      loadTasksFromDB(db);
     } catch (error) {
-      console.log("Error picking document:", error);
+      console.log("Error deleting task:", error);
     }
   };
 
-  const formatDate = (date) => {
-    return date instanceof Date
-      ? date.toISOString().split("T")[0]
-      : new Date(date).toISOString().split("T")[0];
-  };
-
-  // Update this function
   const handleDateSelect = (date) => {
-    const tasksForDate = tasks.filter(
-      (task) => formatDate(task.dueDate) === date
-    );
-    console.log("Tasks for selected date:", tasksForDate);
-    // You can implement further logic here, like showing these tasks in a modal
+    const tasksForDate = tasks.filter((task) => task.dueDate.startsWith(date));
   };
 
   const renderTask = ({ item }) => {
-    const isOverdue =
-      new Date(item.dueDate) < new Date() && item.status === "Pending";
+    const dueDate = new Date(item.dueDate);
+    const isExpanded = expandedTasks[item.id];
+    const isOverdue = dueDate < new Date() && item.status !== "Done";
+
+    const toggleExpand = () => {
+      setExpandedTasks((prev) => ({
+        ...prev,
+        [item.id]: !prev[item.id],
+      }));
+    };
+
     return (
       <TouchableOpacity
-        style={[styles.taskItem, isOverdue && styles.overdueTask]}
-        onPress={() => setVisibleOptionsTaskId(item.id)}
+        style={[
+          styles.taskItem,
+          isExpanded && styles.taskItemExpanded,
+          isOverdue && styles.overdueTask,
+        ]}
+        onPress={toggleExpand}
       >
-        <Text style={[styles.taskTitle, isOverdue && styles.overdueText]}>
-          {item.title}
-        </Text>
-        {visibleOptionsTaskId === item.id && (
-          <View>
+        <View style={styles.taskHeader}>
+          <Text style={[styles.taskTitle, isOverdue && styles.overdueText]}>
+            {item.title}
+            {isOverdue && " (OVERDUE)"}
+          </Text>
+        </View>
+        {isExpanded && (
+          <View style={styles.taskDetails}>
             <Text style={styles.taskDescription}>{item.description}</Text>
             <Text style={styles.taskDueDate}>
-              Due: {new Date(item.dueDate).toLocaleString()}
+              Due:{" "}
+              {dueDate.toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
             </Text>
+            <Text style={styles.taskDueDate}>
+              Time:{" "}
+              {dueDate.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </Text>
+            <Text style={styles.taskDueDate}>Interval: {item.interval}</Text>
             <Text style={styles.taskStatus}>Status: {item.status}</Text>
-            <Text style={styles.taskInterval}>Interval: {item.interval}</Text>
-            {item.attachments.length > 0 && (
-              <Text style={styles.taskAttachments}>
-                Attachments: {item.attachments.length}
-              </Text>
-            )}
             <View style={styles.taskOptions}>
               <TouchableOpacity
                 style={styles.iconButton}
@@ -441,10 +533,10 @@ function MainScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconButton}
-                onPress={() => archiveTask(item.id)}
+                onPress={() => cancelTask(item.id)}
               >
                 <Image
-                  source={require("./assets/archive.png")}
+                  source={require("./assets/x.png")}
                   style={styles.iconImage}
                 />
               </TouchableOpacity>
@@ -461,27 +553,6 @@ function MainScreen() {
           </View>
         )}
       </TouchableOpacity>
-    );
-  };
-
-  // Update getTasksToShow function
-  const getTasksToShow = () => {
-    const now = new Date();
-    let filteredTasks = tasks.filter(
-      (task) => task.status !== "Done" && task.status !== "Archived"
-    );
-    if (showNextSevenDays) {
-      const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      filteredTasks = filteredTasks.filter(
-        (task) => new Date(task.dueDate) <= sevenDaysLater
-      );
-    } else {
-      filteredTasks = filteredTasks.filter(
-        (task) => new Date(task.dueDate).toDateString() === now.toDateString()
-      );
-    }
-    return filteredTasks.sort(
-      (a, b) => new Date(a.dueDate) - new Date(b.dueDate)
     );
   };
 
@@ -503,6 +574,10 @@ function MainScreen() {
         <Text style={styles.currentDateTime}>
           Today's Date: {formatDateTime(currentDateTime)}
         </Text>
+        <Image
+          source={require("./assets/NinjaLogo.png")} // Make sure the path is correct
+          style={styles.ninjaLogo} // Define this style for proper positioning
+        />
       </View>
       <View style={styles.list_calendar}>
         <TouchableOpacity onPress={() => setView("list")}>
@@ -511,56 +586,31 @@ function MainScreen() {
         <TouchableOpacity onPress={() => setView("calendar")}>
           <Text>Calendar View</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setView("history")}>
-          <Text>History</Text>
-        </TouchableOpacity>
       </View>
-
-      {view === "list" && (
-        <>
-          <View style={styles.viewToggle}>
-            <TouchableOpacity onPress={() => setShowNextSevenDays(false)}>
-              <Text
-                style={
-                  showNextSevenDays
-                    ? styles.inactiveToggle
-                    : styles.activeToggle
-                }
-              >
-                Today
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowNextSevenDays(true)}>
-              <Text
-                style={
-                  showNextSevenDays
-                    ? styles.activeToggle
-                    : styles.inactiveToggle
-                }
-              >
-                Next 7 Days
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={getTasksToShow()}
-            renderItem={renderTask}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={styles.taskList}
-          />
-        </>
-      )}
-
-      {view === "calendar" && (
+      {view === "list" ? (
+        <FlatList
+          data={tasks}
+          renderItem={renderTask}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.taskList}
+          style={{ flex: 1 }}
+        />
+      ) : view === "calendar" ? (
         <CalendarView
           tasks={tasks}
-          onSelectDate={handleDateSelect}
-          onTaskPress={handleTaskPress}
+          onUpdateTask={handleEditTask}
+          onDeleteTask={handleDeleteTask}
+          onAddTask={(date) => {
+            setNewTask({
+              ...newTask,
+              dueDate: new Date(date),
+            });
+            setModalVisible(true);
+          }}
         />
+      ) : (
+        <TaskHistoryView />
       )}
-
-      {view === "history" && <TaskHistoryView db={db} />}
-
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => {
@@ -571,7 +621,7 @@ function MainScreen() {
             recurring: false,
             interval: "",
           });
-          setEditingTaskId(null);
+          setEditingTaskId(null); // Reset editingTaskId when adding a new task
           setModalVisible(true);
         }}
       >
@@ -580,7 +630,6 @@ function MainScreen() {
           style={styles.addButtonImage}
         />
       </TouchableOpacity>
-
       <Modal
         animationType="slide"
         transparent={false}
@@ -640,7 +689,15 @@ function MainScreen() {
                 onChange={(event, selectedDate) => {
                   const currentDate = selectedDate || newTask.dueDate;
                   setShowDatePicker(false);
-                  setNewTask({ ...newTask, dueDate: new Date(currentDate) });
+                  setNewTask({
+                    ...newTask,
+                    dueDate: new Date(
+                      currentDate.setHours(
+                        newTask.dueDate.getHours(),
+                        newTask.dueDate.getMinutes()
+                      )
+                    ),
+                  });
                 }}
               />
             )}
@@ -652,16 +709,18 @@ function MainScreen() {
                 onChange={(event, selectedTime) => {
                   const currentTime = selectedTime || newTask.dueDate;
                   setShowTimePicker(false);
-                  setNewTask({ ...newTask, dueDate: currentTime });
+                  setNewTask({
+                    ...newTask,
+                    dueDate: new Date(
+                      newTask.dueDate.setHours(
+                        currentTime.getHours(),
+                        currentTime.getMinutes()
+                      )
+                    ),
+                  });
                 }}
               />
             )}
-            <TouchableOpacity
-              style={styles.customButton}
-              onPress={handleAttachment}
-            >
-              <Text style={styles.buttonText}>Add Attachment</Text>
-            </TouchableOpacity>
             <Text>
               Selected Date and Time: {formatDateTime(newTask.dueDate)}
             </Text>
@@ -687,7 +746,6 @@ function MainScreen() {
   );
 }
 
-// The structure of the app is defined using the NavigationContainer and DrawerNavigator components
 export default function App() {
   return (
     <ThemeProvider>

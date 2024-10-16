@@ -167,146 +167,84 @@ const styles = StyleSheet.create({
   iconImage: {
     width: 24,
     height: 24,
-  }, // New styles for overdue tasks and expanded views
-  overdueTask: {
-    backgroundColor: "#FFCCCB",
-    borderColor: "#FF0000",
+  },
+  ninjaLogo: {
+    width: 50, // Set the width of the image
+    height: 50, // Set the height of the image
+    position: "absolute", // Position it in the top right corner
+    right: 10, // Adjust the distance from the right edge
+    top: 20, // Adjust the distance from the top edge
+  },
+
+  taskHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  editButton: {
+    padding: 5,
+  },
+  smallIconImage: {
+    width: 20,
+    height: 20,
+  },
+  taskItemExpanded: {
+    backgroundColor: "#F5FCFD",
+  },
+  taskDetails: {
+    marginTop: 10,
   },
   taskOptions: {
     flexDirection: "row",
     justifyContent: "space-around",
     marginTop: 10,
   },
-  viewToggle: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    padding: 10,
-    backgroundColor: "#f0f0f0",
-  },
-  activeToggle: {
-    fontWeight: "bold",
-    color: "#007AFF",
-  },
-  inactiveToggle: {
-    color: "#000000",
-  },
-
-  // Calendar view styles
-  calendarContainer: {
-    flex: 1,
-  },
-  calendarTaskList: {
-    flex: 1,
-    padding: 10,
-  },
-  calendarTaskItem: {
-    backgroundColor: "#FFFFFF",
-    padding: 10,
-    marginVertical: 5,
-    borderRadius: 5,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  calendarTaskTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  calendarTaskTime: {
-    fontSize: 14,
-    color: "#666",
-  },
-
-  // Modal styles
-  centeredView: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalView: {
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    width: "80%",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
-  modalDescription: {
-    fontSize: 16,
-    marginBottom: 10,
-  },
-  modalDueDate: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 5,
-  },
-  modalStatus: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 15,
-  },
-  modalCloseButton: {
-    backgroundColor: "#2196F3",
-    borderRadius: 20,
-    padding: 10,
-    elevation: 2,
-  },
-  modalCloseButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-
-  // History view styles
-  historyContainer: {
-    flex: 1,
+  historyList: {
     padding: 10,
   },
   historyItem: {
     backgroundColor: "#FFFFFF",
+    borderRadius: 8,
     padding: 15,
-    marginVertical: 8,
-    borderRadius: 5,
+    marginBottom: 10,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.23,
-    shadowRadius: 2.62,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   historyTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 5,
+    color: "#006064",
+  },
+  historyDescription: {
+    fontSize: 14,
+    color: "#004D40",
+    marginTop: 5,
+  },
+  historyStatus: {
+    fontSize: 14,
+    color: "#00796B",
+    marginTop: 5,
   },
   historyDate: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 5,
-  },
-  historyChangeType: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#007AFF",
-  },
-  historyDetails: {
-    fontSize: 14,
+    fontSize: 12,
+    color: "#00ACC1",
     marginTop: 5,
+  },
+  currentStatus: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#006064",
+    marginTop: 5,
+  },
+  overdueTask: {
+    borderColor: "red",
+    borderWidth: 1,
+  },
+  overdueText: {
+    color: "red",
   },
 });
 

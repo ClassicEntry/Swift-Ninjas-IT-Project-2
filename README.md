@@ -2,14 +2,12 @@
 
 IT Project 2 GitHub Repostory
 
-## HOW TO USE
+## HOW TO INSTALL
 
-Ensure you have installed Node.js `https://nodejs.org/en/download/package-manager`
+Run the following the terminal as root
 
-Ensure you also install Watchmen for your OS `https://facebook.github.io/watchman/docs/install`
-
-`cd expo_test` directory
-
-`npm install` as root
-
-`npx expo start`/`npx expo run:ios`
+1. `npm install react-native`
+2. `npm install -g expo-cli`
+3. cd into directory of the project with ```cd event-scheduler-app``` 
+4. `npm install`
+5. `npx expo start`

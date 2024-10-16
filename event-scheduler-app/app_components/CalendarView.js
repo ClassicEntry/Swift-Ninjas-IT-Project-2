@@ -1,58 +1,93 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, Modal, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Modal,
+  FlatList,
+  StyleSheet,
+} from "react-native";
 import { Calendar } from "react-native-calendars";
-import styles from "./styles";
 
-const CalendarView = ({ tasks, onSelectDate, onTaskPress }) => {
-  const [selected, setSelected] = useState("");
+const MAX_DOTS = 4;
+
+const CalendarView = ({ tasks, onUpdateTask, onDeleteTask, onAddTask }) => {
+  const [currentDate, setCurrentDate] = useState(formatDate(new Date()));
+  const [selectedDate, setSelectedDate] = useState("");
   const [markedDates, setMarkedDates] = useState({});
-  const [selectedTasks, setSelectedTasks] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [selectedTasks, setSelectedTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
 
-  const formatDate = (date) => {
-    if (date instanceof Date) {
-      return date.toISOString().split("T")[0];
-    }
-    return new Date(date).toISOString().split("T")[0];
-  };
+  // Function to format date consistently
+  function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
 
   useEffect(() => {
-    const dates = tasks.reduce((acc, task) => {
-      const date = formatDate(task.dueDate);
-      acc[date] = {
-        marked: true,
-        dotColor: task.status === "Overdue" ? "red" : "blue",
-      };
+    setSelectedDate(currentDate);
+    const tasksForToday = tasks.filter(
+      (task) => formatDate(new Date(task.dueDate)) === currentDate
+    );
+    setSelectedTasks(tasksForToday);
+  }, []);
+
+  useEffect(() => {
+    const marked = tasks.reduce((acc, task) => {
+      const date = formatDate(new Date(task.dueDate));
+      if (!acc[date]) {
+        acc[date] = { dots: [] };
+      }
+      if (acc[date].dots.length < MAX_DOTS) {
+        acc[date].dots.push({ color: getStatusColor(task.status) });
+      } else if (acc[date].dots.length === MAX_DOTS) {
+        acc[date].dots[MAX_DOTS - 1] = { color: "red", key: "more" };
+      }
       return acc;
     }, {});
-    setMarkedDates(dates);
+    setMarkedDates(marked);
   }, [tasks]);
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "overdue":
+        return "red";
+      case "completed":
+        return "green";
+      default:
+        return "deepskyblue";
+    }
+  };
+
   const onDayPress = (day) => {
-    setSelected(day.dateString);
-    const filteredTasks = tasks.filter((task) => {
-      return formatDate(task.dueDate) === day.dateString;
-    });
-    setSelectedTasks(filteredTasks);
-    onSelectDate(day.dateString);
-  };
-
-  const handleTaskPress = (task) => {
-    setSelectedTask(task);
+    setSelectedDate(day.dateString);
+    const tasksForDay = tasks.filter(
+      (task) => formatDate(new Date(task.dueDate)) === day.dateString
+    );
+    setSelectedTasks(tasksForDay);
     setModalVisible(true);
-    onTaskPress(task);
   };
 
-  const renderTask = (task) => (
+  const renderTask = ({ item }) => (
     <TouchableOpacity
-      key={task.id}
-      style={styles.calendarTaskItem}
-      onPress={() => handleTaskPress(task)}
+      style={styles.taskItem}
+      onPress={() => {
+        setSelectedTask(item);
+        setModalVisible(true);
+      }}
     >
-      <Text style={styles.calendarTaskTitle}>{task.title}</Text>
-      <Text style={styles.calendarTaskTime}>
-        {new Date(task.dueDate).toLocaleTimeString([], {
+      <View
+        style={[
+          styles.taskIndicator,
+          { backgroundColor: getStatusColor(item.status) },
+        ]}
+      />
+      <Text style={styles.taskTitle}>{item.title}</Text>
+      <Text style={styles.taskTime}>
+        {new Date(item.dueDate).toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         })}
@@ -60,58 +95,213 @@ const CalendarView = ({ tasks, onSelectDate, onTaskPress }) => {
     </TouchableOpacity>
   );
 
+  const TaskDetailModal = () => (
+    <Modal
+      visible={modalVisible}
+      transparent={true}
+      onRequestClose={() => {
+        setModalVisible(false);
+        setSelectedTask(null);
+      }}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          {selectedTask ? (
+            <>
+              <Text style={styles.modalTitle}>{selectedTask.title}</Text>
+              <Text style={styles.modalDescription}>
+                {selectedTask.description}
+              </Text>
+              <Text style={styles.modalDate}>
+                Due: {new Date(selectedTask.dueDate).toLocaleString()}
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={() => {
+                    onUpdateTask(selectedTask.id);
+                    setModalVisible(false);
+                    setSelectedTask(null);
+                  }}
+                >
+                  <Text style={styles.modalButtonText}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.deleteButton]}
+                  onPress={() => {
+                    onDeleteTask(selectedTask.id);
+                    setModalVisible(false);
+                    setSelectedTask(null);
+                  }}
+                >
+                  <Text style={styles.modalButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.modalTitle}>Tasks for {selectedDate}</Text>
+          )}
+          {!selectedTask && (
+            <FlatList
+              data={selectedTasks}
+              renderItem={renderTask}
+              keyExtractor={(item) => item.id.toString()}
+            />
+          )}
+          <TouchableOpacity
+            onPress={() => {
+              onAddTask(new Date(selectedDate));
+              setModalVisible(false);
+              setSelectedTask(null);
+            }}
+            style={styles.addButton}
+          >
+            <Text>Add New Task</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setModalVisible(false);
+              setSelectedTask(null);
+            }}
+            style={styles.closeButton}
+          >
+            <Text>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
-    <View style={styles.calendarContainer}>
+    <View style={styles.container}>
       <Calendar
+        current={currentDate}
         onDayPress={onDayPress}
         markedDates={{
           ...markedDates,
-          [selected]: {
+          [selectedDate]: {
+            ...markedDates[selectedDate],
             selected: true,
-            disableTouchEvent: true,
-            selectedDotColor: "orange",
+            selectedColor: "lightblue",
+          },
+          [currentDate]: {
+            ...markedDates[currentDate],
+            selected: selectedDate === currentDate,
+            selectedColor: "lightblue",
+            dotColor: "red",
+            marked: true,
           },
         }}
+        markingType={"multi-dot"}
+        theme={{
+          dotStyle: {
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            marginTop: 2,
+            marginHorizontal: 1,
+          },
+          todayTextColor: "red",
+        }}
       />
-      <View style={styles.selectedDateContainer}>
-        <Text style={styles.selectedDateText}>Tasks on {selected}</Text>
-      </View>
-      <ScrollView style={styles.calendarTaskList}>
-        {selectedTasks.map(renderTask)}
-      </ScrollView>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+      <TouchableOpacity
+        onPress={() => onDayPress({ dateString: currentDate })}
+        style={styles.todayButton}
       >
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            {selectedTask && (
-              <>
-                <Text style={styles.modalTitle}>{selectedTask.title}</Text>
-                <Text style={styles.modalDescription}>
-                  {selectedTask.description}
-                </Text>
-                <Text style={styles.modalDueDate}>
-                  Due: {new Date(selectedTask.dueDate).toLocaleString()}
-                </Text>
-                <Text style={styles.modalStatus}>
-                  Status: {selectedTask.status}
-                </Text>
-                <TouchableOpacity
-                  style={styles.modalCloseButton}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={styles.modalCloseButtonText}>Close</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
+        <Text style={styles.todayButtonText}>Show Today's Tasks</Text>
+      </TouchableOpacity>
+      <TaskDetailModal />
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    width: "80%",
+    maxHeight: "80%",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  modalDescription: {
+    marginBottom: 10,
+  },
+  modalDate: {
+    marginBottom: 10,
+  },
+  taskItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  taskIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  taskTitle: {
+    flex: 1,
+  },
+  taskTime: {
+    marginLeft: 10,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 10,
+  },
+  modalButton: {
+    padding: 10,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 5,
+  },
+  deleteButton: {
+    backgroundColor: "#ff6b6b",
+  },
+  modalButtonText: {
+    color: "white",
+  },
+  addButton: {
+    backgroundColor: "#4CAF50",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  closeButton: {
+    backgroundColor: "#f44336",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  todayButton: {
+    backgroundColor: "#4CAF50",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 10,
+    marginHorizontal: 20,
+  },
+  todayButtonText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+});
 
 export default CalendarView;
