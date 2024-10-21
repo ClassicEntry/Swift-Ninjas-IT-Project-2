@@ -11,19 +11,18 @@ import * as SQLite from "expo-sqlite";
 import { useTheme } from "./ThemeContext";
 import { useFocusEffect } from "@react-navigation/native";
 
-function CompletedTasksScreen({ navigation }) {
+function ArchivedTasksScreen({ navigation }) {
   const [db, setDb] = useState(null);
-  const [completedTasks, setCompletedTasks] = useState([]);
+  const [archivedTasks, setArchivedTasks] = useState([]);
   const [expandedTasks, setExpandedTasks] = useState({});
   const { theme } = useTheme();
 
-  // Initial database setup
   useEffect(() => {
     const initializeDatabase = async () => {
       try {
         const database = await SQLite.openDatabaseAsync("tasks.db");
         setDb(database);
-        await loadCompletedTasksFromDB(database);
+        await loadArchivedTasksFromDB(database);
       } catch (error) {
         console.error("Error initializing database:", error);
       }
@@ -32,27 +31,26 @@ function CompletedTasksScreen({ navigation }) {
     initializeDatabase();
   }, []);
 
-  // Auto refresh when screen is focused
   useFocusEffect(
     React.useCallback(() => {
       if (db) {
-        loadCompletedTasksFromDB(db);
+        loadArchivedTasksFromDB(db);
       }
       return () => {};
     }, [db])
   );
 
-  const loadCompletedTasksFromDB = async (database) => {
+  const loadArchivedTasksFromDB = async (database) => {
     try {
       const result = await database.getAllAsync(
         `SELECT * FROM tasks 
-         WHERE status = 'Done' OR status = 'Completed' 
+         WHERE status = 'Archived' 
          ORDER BY dueDate DESC`
       );
-      setCompletedTasks(result);
-      console.log("Loaded completed tasks:", result.length); // Debug log
+      setArchivedTasks(result);
+      console.log("Loaded archived tasks:", result.length);
     } catch (error) {
-      console.error("Error loading completed tasks:", error);
+      console.error("Error loading archived tasks:", error);
     }
   };
 
@@ -63,7 +61,26 @@ function CompletedTasksScreen({ navigation }) {
     }));
   };
 
-  // Update the renderTask function in CompletedTasksScreen:
+  const restoreTask = async (id) => {
+    try {
+      await db.runAsync("UPDATE tasks SET status = 'Pending' WHERE id = ?", [
+        id,
+      ]);
+      await loadArchivedTasksFromDB(db);
+    } catch (error) {
+      console.error("Error restoring task:", error);
+    }
+  };
+
+  const deleteTask = async (id) => {
+    try {
+      await db.runAsync("DELETE FROM tasks WHERE id = ?", [id]);
+      await loadArchivedTasksFromDB(db);
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    }
+  };
+
   const renderTask = ({ item }) => {
     const isExpanded = expandedTasks[item.id];
     const dueDate = new Date(item.dueDate);
@@ -86,8 +103,8 @@ function CompletedTasksScreen({ navigation }) {
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={async () => {
-                  await undoTask(item.id);
-                  await loadCompletedTasksFromDB(db);
+                  await restoreTask(item.id);
+                  await loadArchivedTasksFromDB(db);
                 }}
               >
                 <Image
@@ -98,20 +115,8 @@ function CompletedTasksScreen({ navigation }) {
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={async () => {
-                  await archiveTask(item.id);
-                  await loadCompletedTasksFromDB(db);
-                }}
-              >
-                <Image
-                  source={require("../assets/archive.png")}
-                  style={styles.icon}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={async () => {
                   await deleteTask(item.id);
-                  await loadCompletedTasksFromDB(db);
+                  await loadArchivedTasksFromDB(db);
                 }}
               >
                 <Image
@@ -126,51 +131,19 @@ function CompletedTasksScreen({ navigation }) {
     );
   };
 
-  // Add the undoTask function:
-  const undoTask = async (id) => {
-    try {
-      await db.runAsync("UPDATE tasks SET status = 'Pending' WHERE id = ?", [
-        id,
-      ]);
-      await loadCompletedTasksFromDB(db);
-    } catch (error) {
-      console.error("Error undoing task:", error);
-    }
-  };
-
-  const archiveTask = async (id) => {
-    try {
-      await db.runAsync("UPDATE tasks SET status = 'Archived' WHERE id = ?", [
-        id,
-      ]);
-      await loadCompletedTasksFromDB(db);
-    } catch (error) {
-      console.error("Error archiving task:", error);
-    }
-  };
-
-  const deleteTask = async (id) => {
-    try {
-      await db.runAsync("DELETE FROM tasks WHERE id = ?", [id]);
-      await loadCompletedTasksFromDB(db);
-    } catch (error) {
-      console.error("Error deleting task:", error);
-    }
-  };
-
   return (
     <View style={styles.container}>
-      {completedTasks.length > 0 ? (
+      {archivedTasks.length > 0 ? (
         <FlatList
-          data={completedTasks}
+          data={archivedTasks}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderTask}
           contentContainerStyle={styles.listContainer}
-          onRefresh={() => loadCompletedTasksFromDB(db)}
+          onRefresh={() => loadArchivedTasksFromDB(db)}
           refreshing={false}
         />
       ) : (
-        <Text style={styles.emptyText}>No completed tasks available.</Text>
+        <Text style={styles.emptyText}>No archived tasks available.</Text>
       )}
     </View>
   );
@@ -227,4 +200,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CompletedTasksScreen;
+export default ArchivedTasksScreen;

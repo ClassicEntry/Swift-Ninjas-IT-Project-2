@@ -7,6 +7,7 @@ export const ThemeProvider = ({ children }) => {
     primary: "#007AFF",
     background: "#F2F2F7",
     text: "#000000",
+    taskBackground: "#FFFFFF", // Add this
   });
 
   return (

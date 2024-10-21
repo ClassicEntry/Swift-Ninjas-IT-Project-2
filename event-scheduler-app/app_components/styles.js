@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   },
   picker: {
     width: "100%",
-    height: 100,
+    height: 85,
     marginBottom: 100,
   },
   list_calendar: {
@@ -245,6 +245,23 @@ const styles = StyleSheet.create({
   },
   overdueText: {
     color: "red",
+  },
+  switchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 5,
+  },
+  switchLabel: {
+    fontSize: 14,
+    color: "#333",
+    marginRight: 10,
+    fontWeight: "bold",
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });
 

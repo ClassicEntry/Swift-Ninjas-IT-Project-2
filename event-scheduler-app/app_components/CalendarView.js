@@ -110,10 +110,16 @@ const CalendarView = ({ tasks, onUpdateTask, onDeleteTask, onAddTask }) => {
             <>
               <Text style={styles.modalTitle}>{selectedTask.title}</Text>
               <Text style={styles.modalDescription}>
-                {selectedTask.description}
+                Description: {selectedTask.description}
               </Text>
               <Text style={styles.modalDate}>
                 Due: {new Date(selectedTask.dueDate).toLocaleString()}
+              </Text>
+              <Text style={styles.modalDate}>
+                Interval: {selectedTask.interval}
+              </Text>
+              <Text style={styles.modalDate}>
+                Status: {selectedTask.status}
               </Text>
               <View style={styles.modalButtons}>
                 <TouchableOpacity
@@ -156,7 +162,7 @@ const CalendarView = ({ tasks, onUpdateTask, onDeleteTask, onAddTask }) => {
             }}
             style={styles.addButton}
           >
-            <Text>Add New Task</Text>
+            <Text style={{ fontWeight: "bold" }}>Add New Task</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -165,7 +171,7 @@ const CalendarView = ({ tasks, onUpdateTask, onDeleteTask, onAddTask }) => {
             }}
             style={styles.closeButton}
           >
-            <Text>Close</Text>
+            <Text style={{ fontWeight: "bold" }}>Close</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -268,17 +274,21 @@ const styles = StyleSheet.create({
   modalButton: {
     padding: 10,
     backgroundColor: "#e0e0e0",
+    fontWeight: "bold",
+
     borderRadius: 5,
   },
   deleteButton: {
     backgroundColor: "#ff6b6b",
   },
   modalButtonText: {
-    color: "white",
+    color: "black",
+    fontWeight: "bold",
   },
   addButton: {
     backgroundColor: "#4CAF50",
     padding: 10,
+
     borderRadius: 5,
     alignItems: "center",
     marginTop: 10,
@@ -286,6 +296,7 @@ const styles = StyleSheet.create({
   closeButton: {
     backgroundColor: "#f44336",
     padding: 10,
+
     borderRadius: 5,
     alignItems: "center",
     marginTop: 10,

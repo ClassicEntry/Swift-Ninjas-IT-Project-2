@@ -13,6 +13,7 @@ import {
   Alert,
   Image,
   StyleSheet,
+  Switch,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
@@ -27,6 +28,7 @@ import CompletedTasksScreen from "./app_components/CompletedTasksScreen";
 import SettingsScreen from "./app_components/SettingsScreen";
 import { ThemeProvider, useTheme } from "./app_components/ThemeContext";
 import TaskHistoryView from "./app_components/TaskHistoryView";
+import ArchivedTasksScreen from "./app_components/ArchivedTasksScreen";
 
 const Drawer = createDrawerNavigator();
 
@@ -57,29 +59,48 @@ function MainScreen() {
     return () => clearInterval(interval);
   }, []);
 
+  const AlertAsync = async (title, message, buttons) => {
+    return new Promise((resolve) => {
+      Alert.alert(
+        title,
+        message,
+        buttons.map((button) => ({
+          ...button,
+          onPress: () => resolve(button.value),
+        }))
+      );
+    });
+  };
+
   const initializeDatabase = async () => {
     try {
       const database = await SQLite.openDatabaseAsync("tasks.db");
       setDb(database);
 
-      await database.execAsync(`CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        description TEXT,
-        dueDate TEXT,
-        recurring INTEGER,
-        interval TEXT,
-        status TEXT
-      );`);
+      await database.execAsync(`
+        CREATE TABLE IF NOT EXISTS tasks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT,
+          description TEXT,
+          dueDate TEXT,
+          recurring INTEGER,
+          interval TEXT,
+          status TEXT,
+          parentTaskId INTEGER, -- Add this field for recurring task relationship
+          FOREIGN KEY(parentTaskId) REFERENCES tasks(id)
+        );
+      `);
 
-      await database.execAsync(`CREATE TABLE IF NOT EXISTS history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        taskId INTEGER,
-        oldStatus TEXT,
-        newStatus TEXT,
-        changeDate TEXT,
-        FOREIGN KEY(taskId) REFERENCES tasks(id)
-      );`);
+      await database.execAsync(`
+        CREATE TABLE IF NOT EXISTS history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          taskId INTEGER,
+          oldStatus TEXT,
+          newStatus TEXT,
+          changeDate TEXT,
+          FOREIGN KEY(taskId) REFERENCES tasks(id)
+        );
+      `);
 
       loadTasksFromDB(database);
     } catch (error) {
@@ -91,6 +112,7 @@ function MainScreen() {
     initializeDatabase();
   }, []);
 
+  // Set up notification handler
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
@@ -99,182 +121,458 @@ function MainScreen() {
     }),
   });
 
-  useEffect(() => {
-    const scheduleNotifications = async () => {
-      await Notifications.requestPermissionsAsync();
-      tasks.forEach((task) => {
-        if (task.recurring) {
-          let triggerConfig = {};
-          if (task.interval === "daily") {
-            triggerConfig = { hour: 9, minute: 0, repeats: true };
-          } else if (task.interval === "weekly") {
-            triggerConfig = {
-              weekday: new Date().getDay(),
-              hour: 9,
-              minute: 0,
+  // Function to generate unique notification ID
+  const getNotificationId = (task, type) => {
+    return `${task.id}-${type}`;
+  };
+
+  // Function to schedule notifications for a task
+  const scheduleTaskNotification = async (task) => {
+    try {
+      // Cancel existing notifications
+      const notificationIds = [
+        getNotificationId(task, "due"),
+        getNotificationId(task, "warning"),
+        getNotificationId(task, "recurring"),
+      ];
+
+      for (const id of notificationIds) {
+        await Notifications.cancelScheduledNotificationAsync(id);
+      }
+
+      if (task.status === "Done") return;
+
+      const now = new Date();
+      const dueDate = new Date(task.dueDate);
+
+      // For recurring tasks
+      if (task.recurring && task.interval) {
+        const time = new Date(task.dueDate);
+        const interval = task.interval.toLowerCase();
+        console.log(
+          "Scheduling recurring notification for interval:",
+          interval
+        );
+
+        let trigger;
+        switch (interval) {
+          case "daily":
+            // For daily tasks, use a DateTimeComponent trigger
+            trigger = {
+              hour: time.getHours(),
+              minute: time.getMinutes(),
+              second: 0,
               repeats: true,
-              interval: 7,
             };
-          } else if (task.interval === "fortnightly") {
-            triggerConfig = {
-              weekday: new Date().getDay(),
-              hour: 9,
-              minute: 0,
+            break;
+
+          case "weekly":
+            // For weekly tasks
+            trigger = {
+              hour: time.getHours(),
+              minute: time.getMinutes(),
+              second: 0,
+              weekday: time.getDay() + 1, // 1-7, where 1 is Monday
               repeats: true,
-              interval: 14,
             };
-          } else if (task.interval === "monthly") {
-            triggerConfig = {
-              day: new Date().getDate(),
-              hour: 9,
-              minute: 0,
+            break;
+
+          case "fortnightly":
+            // For fortnightly tasks, schedule the next occurrence
+            const nextDate = calculateNextOccurrence(dueDate, interval);
+            trigger = nextDate; // Direct date object for one-time trigger
+            break;
+
+          case "monthly":
+            // For monthly tasks
+            trigger = {
+              hour: time.getHours(),
+              minute: time.getMinutes(),
+              second: 0,
+              day: time.getDate(), // Day of the month (1-31)
               repeats: true,
-              interval: 30,
             };
-          } else if (task.interval === "yearly") {
-            triggerConfig = {
-              day: new Date().getDate(),
-              month: new Date().getMonth(),
-              hour: 9,
-              minute: 0,
+            break;
+
+          case "yearly":
+            // For yearly tasks
+            trigger = {
+              hour: time.getHours(),
+              minute: time.getMinutes(),
+              second: 0,
+              day: time.getDate(),
+              month: time.getMonth() + 1, // 1-12
               repeats: true,
-              interval: 365,
             };
+            break;
+        }
+
+        // Schedule the recurring notification
+        await Notifications.scheduleNotificationAsync({
+          identifier: getNotificationId(task, "recurring"),
+          content: {
+            title: `${task.interval} Task Due`,
+            body: `"${task.title}" is due!`,
+            data: { taskId: task.id },
+          },
+          trigger: trigger,
+        });
+
+        // Add 30-minute warning if task is in the future
+        if (dueDate > now) {
+          const warningTime = new Date(dueDate);
+          warningTime.setMinutes(warningTime.getMinutes() - 30);
+
+          if (warningTime > now) {
+            await Notifications.scheduleNotificationAsync({
+              identifier: getNotificationId(task, "warning"),
+              content: {
+                title: "Task Due Soon",
+                body: `"${task.title}" is due in 30 minutes!`,
+                data: { taskId: task.id },
+              },
+              trigger: warningTime,
+            });
           }
-          Notifications.scheduleNotificationAsync({
+        }
+      }
+      // For non-recurring tasks
+      else {
+        if (dueDate > now) {
+          // Schedule main notification at due time
+          await Notifications.scheduleNotificationAsync({
+            identifier: getNotificationId(task, "due"),
             content: {
-              title: "Recurring Reminder",
-              body: `${task.title} is due!`,
+              title: "Task Due",
+              body: `"${task.title}" is now due!`,
+              data: { taskId: task.id },
             },
-            trigger: triggerConfig,
+            trigger: dueDate,
+          });
+
+          // Schedule 30-minute warning
+          const warningTime = new Date(dueDate);
+          warningTime.setMinutes(warningTime.getMinutes() - 30);
+
+          if (warningTime > now) {
+            await Notifications.scheduleNotificationAsync({
+              identifier: getNotificationId(task, "warning"),
+              content: {
+                title: "Task Due Soon",
+                body: `"${task.title}" is due in 30 minutes!`,
+                data: { taskId: task.id },
+              },
+              trigger: warningTime,
+            });
+          }
+        }
+        // For overdue tasks
+        else if (task.status !== "Done") {
+          await Notifications.scheduleNotificationAsync({
+            identifier: getNotificationId(task, "reminder"),
+            content: {
+              title: "Overdue Task",
+              body: `"${task.title}" is overdue!`,
+              data: { taskId: task.id },
+            },
+            trigger: {
+              hour: 9,
+              minute: 0,
+              second: 0,
+              repeats: true,
+            },
           });
         }
+      }
+
+      // Debug logging
+      console.log(`Scheduled notifications for task: ${task.title}`);
+    } catch (error) {
+      console.error("Failed to schedule notification:", error);
+      console.error("Error details:", error.message);
+    }
+  };
+
+  // Add a notification monitoring effect
+  useEffect(() => {
+    const subscription = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log("Received notification:", notification);
+      }
+    );
+
+    // Also monitor notification responses (when user taps notification)
+    const responseSubscription =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        console.log("Notification response:", response);
       });
+
+    return () => {
+      subscription.remove();
+      responseSubscription.remove();
     };
-    scheduleNotifications();
-  }, [tasks]);
+  }, []);
+
+  // Add a function to verify scheduled notifications (helpful for debugging)
+  const verifyScheduledNotifications = async () => {
+    try {
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      console.log("Currently scheduled notifications:", scheduled);
+    } catch (error) {
+      console.error("Error checking scheduled notifications:", error);
+    }
+  };
+
+  // Main useEffect to handle notifications
+  useEffect(() => {
+    const setupNotifications = async () => {
+      // Request permissions
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== "granted") {
+        alert("You need to enable notifications to use this feature.");
+        return;
+      }
+
+      // Schedule notifications for all tasks
+      for (const task of tasks) {
+        await scheduleTaskNotification(task);
+      }
+    };
+
+    setupNotifications();
+  }, [tasks]); // Re-run when tasks change
+  // Function to calculate next occurrence
+  const calculateNextOccurrence = (currentDate, interval) => {
+    const nextDate = new Date(currentDate);
+
+    switch (interval.toLowerCase()) {
+      case "daily":
+        nextDate.setDate(nextDate.getDate() + 1);
+        break;
+      case "weekly":
+        nextDate.setDate(nextDate.getDate() + 7);
+        break;
+      case "fortnightly":
+        nextDate.setDate(nextDate.getDate() + 14);
+        break;
+      case "monthly":
+        nextDate.setMonth(nextDate.getMonth() + 1);
+        break;
+      case "yearly":
+        nextDate.setFullYear(nextDate.getFullYear() + 1);
+        break;
+      default:
+        return null;
+    }
+    return nextDate;
+  };
+
+  // Function to handle recurring task completion
+  const handleRecurringTaskComplete = async (task) => {
+    try {
+      // Create next occurrence
+      const nextDueDate = calculateNextOccurrence(task.dueDate, task.interval);
+
+      // Insert next occurrence
+      const result = await db.runAsync(
+        `INSERT INTO tasks (title, description, dueDate, recurring, interval, status, parentTaskId) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          task.title,
+          task.description,
+          nextDueDate.toISOString(),
+          1,
+          task.interval,
+          "Pending",
+          task.parentTaskId || task.id, // Link to original task
+        ]
+      );
+
+      // Update history
+      await db.runAsync(
+        `INSERT INTO history (taskId, oldStatus, newStatus, changeDate) 
+       VALUES (?, ?, ?, ?)`,
+        [result.insertId, "Created", "Pending", new Date().toISOString()]
+      );
+
+      return result.insertId;
+    } catch (error) {
+      console.error("Error creating next occurrence:", error);
+      throw error;
+    }
+  };
+  // Function to handle task completion
+  const handleTaskComplete = async (taskId) => {
+    // Cancel all notifications for this task
+    const notificationIds = [
+      getNotificationId({ id: taskId }, "due"),
+      getNotificationId({ id: taskId }, "warning"),
+      getNotificationId({ id: taskId }, "reminder"),
+      getNotificationId({ id: taskId }, "recurring"),
+    ];
+
+    for (const id of notificationIds) {
+      await Notifications.cancelScheduledNotificationAsync(id);
+    }
+  };
 
   const loadTasksFromDB = async (database) => {
     try {
-      const result = await database.getAllAsync("SELECT * FROM tasks");
+      const result = await database.getAllAsync(
+        `SELECT * FROM tasks 
+         WHERE status != 'Done' 
+         AND status != 'Completed' 
+         AND status != 'Archived' 
+         ORDER BY dueDate ASC`
+      );
       setTasks(sortTasksByDueDate(result));
     } catch (error) {
       console.log("Error loading tasks:", error);
     }
   };
 
-  // Function to schedule a notification for a task
-  const scheduleTaskNotification = async (task) => {
-    const now = new Date();
-    const dueDate = new Date(task.dueDate);
-    const notificationTime = new Date(dueDate.getTime() - 30 * 60000); // 30 minutes before due time
-
-    // If the notification time is in the past, don't schedule it
-    if (notificationTime <= now) {
-      console.log(`Skipping notification for overdue task: ${task.title}`);
-      return;
-    }
-
-    try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Task Due Soon",
-          body: `Your task "${task.title}" is due in 30 minutes!`,
-        },
-        trigger: notificationTime,
-      });
-      console.log(`Notification scheduled for task: ${task.title}`);
-    } catch (error) {
-      console.error("Failed to schedule notification:", error);
-    }
-  };
-
-  // Function to check for overdue tasks and send notifications
-  const checkOverdueTasks = async () => {
-    const now = new Date();
-    const overdueTasks = tasks.filter(
-      (task) => new Date(task.dueDate) < now && task.status !== "Done"
-    );
-
-    for (let task of overdueTasks) {
-      try {
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: "Overdue Task",
-            body: `Your task "${task.title}" is overdue!`,
-          },
-          trigger: null, // Send immediately
-        });
-        console.log(
-          `Immediate notification sent for overdue task: ${task.title}`
-        );
-      } catch (error) {
-        console.error("Failed to send immediate notification:", error);
-      }
-    }
-  };
-
-  useEffect(() => {
-    const requestPermissions = async () => {
-      const { status } = await Notifications.requestPermissionsAsync();
-      if (status !== "granted") {
-        alert("You need to enable notifications to use this feature.");
-      }
-    };
-
-    requestPermissions();
-
-    // Schedule notifications for existing tasks
-    tasks.forEach(scheduleTaskNotification);
-
-    // Calculate the initial delay until 9 AM the next day
-    const now = new Date();
-    const next9AM = new Date();
-    next9AM.setHours(9, 0, 0, 0);
-    if (now >= next9AM) {
-      next9AM.setDate(next9AM.getDate() + 1);
-    }
-    const initialDelay = next9AM - now;
-
-    // Set a timeout to check for overdue tasks at 9 AM the next day
-    const timeoutId = setTimeout(() => {
-      checkOverdueTasks();
-      // Set an interval to check for overdue tasks every 24 hours
-      const overdueCheckInterval = setInterval(checkOverdueTasks, 86400000); // Check every 24 hours
-      return () => clearInterval(overdueCheckInterval);
-    }, initialDelay);
-
-    return () => clearTimeout(timeoutId);
-  }, [tasks]);
-
   const handleSaveTask = async () => {
     try {
+      // Validate required fields
+      if (!newTask.title) {
+        Alert.alert("Error", "Task title is required");
+        return;
+      }
+
+      // For recurring tasks, verify interval is selected
+      if (newTask.recurring && !newTask.interval) {
+        Alert.alert("Error", "Please select a recurring interval");
+        return;
+      }
+
       if (editingTaskId !== null) {
         // Editing an existing task
-        await db.runAsync(
-          "UPDATE tasks SET title = ?, description = ?, dueDate = ?, recurring = ?, interval = ?, status = ? WHERE id = ?",
-          [
-            newTask.title,
-            newTask.description,
-            newTask.dueDate.toISOString(),
-            newTask.recurring ? 1 : 0,
-            newTask.interval,
-            "Pending",
-            editingTaskId,
-          ]
+        const existingTask = await db.getFirstAsync(
+          "SELECT * FROM tasks WHERE id = ?",
+          [editingTaskId]
         );
+
+        if (!existingTask) {
+          Alert.alert("Error", "Task not found");
+          return;
+        }
+
+        if (existingTask.recurring) {
+          const choice = await AlertAsync(
+            "Edit Recurring Task",
+            "Would you like to edit just this occurrence or all future occurrences?",
+            [
+              { text: "Just This One", value: "single" },
+              { text: "All Future", value: "future" },
+              { text: "Cancel", value: "cancel" },
+            ]
+          );
+
+          if (choice === "cancel") {
+            return;
+          }
+
+          if (choice === "future") {
+            // Update all future occurrences
+            await db.runAsync(
+              `UPDATE tasks 
+               SET title = ?, 
+                   description = ?, 
+                   interval = ?,
+                   recurring = ?
+               WHERE (id = ? OR parentTaskId = ?) 
+               AND datetime(dueDate) >= datetime(?)`,
+              [
+                newTask.title,
+                newTask.description,
+                newTask.interval,
+                newTask.recurring ? 1 : 0,
+                existingTask.parentTaskId || existingTask.id,
+                existingTask.parentTaskId || existingTask.id,
+                existingTask.dueDate,
+              ]
+            );
+
+            // Update due dates for all future occurrences to maintain the new interval
+            const futureTasks = await db.getAllAsync(
+              `SELECT * FROM tasks 
+               WHERE (id = ? OR parentTaskId = ?) 
+               AND datetime(dueDate) >= datetime(?)
+               ORDER BY dueDate`,
+              [
+                existingTask.parentTaskId || existingTask.id,
+                existingTask.parentTaskId || existingTask.id,
+                existingTask.dueDate,
+              ]
+            );
+
+            let baseDate = new Date(newTask.dueDate);
+            for (const task of futureTasks) {
+              await db.runAsync(`UPDATE tasks SET dueDate = ? WHERE id = ?`, [
+                baseDate.toISOString(),
+                task.id,
+              ]);
+              baseDate = calculateNextOccurrence(baseDate, newTask.interval);
+            }
+          } else {
+            // Update just this occurrence
+            await db.runAsync(
+              `UPDATE tasks 
+               SET title = ?, 
+                   description = ?, 
+                   dueDate = ?,
+                   recurring = ?,
+                   interval = ?,
+                   parentTaskId = NULL
+               WHERE id = ?`,
+              [
+                newTask.title,
+                newTask.description,
+                newTask.dueDate.toISOString(),
+                0, // Make it non-recurring
+                null,
+                editingTaskId,
+              ]
+            );
+          }
+        } else {
+          // Regular update for non-recurring tasks
+          await db.runAsync(
+            `UPDATE tasks 
+             SET title = ?, 
+                 description = ?, 
+                 dueDate = ?, 
+                 recurring = ?, 
+                 interval = ?
+             WHERE id = ?`,
+            [
+              newTask.title,
+              newTask.description,
+              newTask.dueDate.toISOString(),
+              newTask.recurring ? 1 : 0,
+              newTask.interval,
+              editingTaskId,
+            ]
+          );
+        }
 
         // Record the edit in history
         await db.runAsync(
           "INSERT INTO history (taskId, oldStatus, newStatus, changeDate) VALUES (?, ?, ?, ?)",
           [editingTaskId, "Edited", "Edited", new Date().toISOString()]
         );
-
-        console.log(`Task updated with ID: ${editingTaskId}`);
       } else {
         // Creating a new task
         const result = await db.runAsync(
-          "INSERT INTO tasks (title, description, dueDate, recurring, interval, status) VALUES (?, ?, ?, ?, ?, ?)",
+          `INSERT INTO tasks (
+            title, 
+            description, 
+            dueDate, 
+            recurring, 
+            interval, 
+            status,
+            parentTaskId
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [
             newTask.title,
             newTask.description,
@@ -282,8 +580,17 @@ function MainScreen() {
             newTask.recurring ? 1 : 0,
             newTask.interval,
             "Pending",
+            null, // This will be the parent task for future recurring instances
           ]
         );
+
+        // If it's a recurring task, set its own ID as parentTaskId
+        if (newTask.recurring) {
+          await db.runAsync("UPDATE tasks SET parentTaskId = ? WHERE id = ?", [
+            result.insertId,
+            result.insertId,
+          ]);
+        }
 
         // Record the creation in history
         await db.runAsync(
@@ -291,10 +598,15 @@ function MainScreen() {
           [result.insertId, "Created", "Pending", new Date().toISOString()]
         );
 
-        console.log(`New task created with ID: ${result.insertId}`);
+        // Schedule notifications for the new task
+        await scheduleTaskNotification({
+          ...newTask,
+          id: result.insertId,
+          status: "Pending",
+        });
       }
 
-      await loadTasksFromDB(db);
+      // Reset form and close modal
       setNewTask({
         title: "",
         description: "",
@@ -302,14 +614,38 @@ function MainScreen() {
         recurring: false,
         interval: "",
       });
-      setEditingTaskId(null); // Reset editingTaskId after saving
+      setEditingTaskId(null);
       setModalVisible(false);
+
+      // Reload tasks
+      await loadTasksFromDB(db);
     } catch (error) {
       console.error("Error saving task:", error);
       Alert.alert("Error", "Failed to save task. Please try again.");
     }
   };
 
+  // Add this helper function for Task Form validation
+  const validateTaskForm = (task) => {
+    const errors = [];
+
+    if (!task.title.trim()) {
+      errors.push("Title is required");
+    }
+
+    if (task.recurring && !task.interval) {
+      errors.push("Please select a recurring interval");
+    }
+
+    if (errors.length > 0) {
+      Alert.alert("Validation Error", errors.join("\n"));
+      return false;
+    }
+
+    return true;
+  };
+
+  // Update the handleEditTask function to load task data into the form
   const handleEditTask = async (id) => {
     if (!db) {
       console.error("Database not initialized");
@@ -329,7 +665,7 @@ function MainScreen() {
           description: result.description,
           dueDate: new Date(result.dueDate),
           recurring: result.recurring === 1,
-          interval: result.interval,
+          interval: result.interval || "",
         });
         setEditingTaskId(id);
         setModalVisible(true);
@@ -372,7 +708,46 @@ function MainScreen() {
   };
 
   const markTaskAsDone = async (id) => {
-    await updateTaskStatus(id, "Done");
+    await handleTaskComplete(id);
+    try {
+      const task = await db.getFirstAsync("SELECT * FROM tasks WHERE id = ?", [
+        id,
+      ]);
+      if (!task) {
+        Alert.alert("Error", "Task not found.");
+        return;
+      }
+
+      // Mark current task as done
+      await db.runAsync(`UPDATE tasks SET status = ? WHERE id = ?`, [
+        "Done",
+        id,
+      ]);
+
+      await db.runAsync(
+        "INSERT INTO history (taskId, oldStatus, newStatus, changeDate) VALUES (?, ?, ?, ?)",
+        [id, task.status, "Done", new Date().toISOString()]
+      );
+
+      // If recurring, create next occurrence
+      if (task.recurring) {
+        const newTaskId = await handleRecurringTaskComplete(task);
+        if (newTaskId) {
+          await scheduleTaskNotification({
+            ...task,
+            id: newTaskId,
+            dueDate: calculateNextOccurrence(task.dueDate, task.interval),
+            status: "Pending",
+          });
+        }
+      }
+
+      // Immediately refresh the tasks list
+      await loadTasksFromDB(db);
+    } catch (error) {
+      console.error("Error marking task as done:", error);
+      Alert.alert("Error", "Failed to complete task. Please try again.");
+    }
   };
 
   const cancelTask = async (id) => {
@@ -446,23 +821,110 @@ function MainScreen() {
 
   const deleteTask = async (id) => {
     try {
-      const oldStatus = await db.getFirstAsync(
-        "SELECT status FROM tasks WHERE id = ?",
-        [id]
-      );
-      await db.runAsync("DELETE FROM tasks WHERE id = ?", [id]);
-      await db.runAsync(
-        "INSERT INTO history (taskId, oldStatus, newStatus, changeDate) VALUES (?, ?, ?, ?)",
-        [id, oldStatus.status, "Deleted", new Date().toISOString()]
-      );
-      loadTasksFromDB(db);
+      const task = await db.getFirstAsync("SELECT * FROM tasks WHERE id = ?", [
+        id,
+      ]);
+      if (!task) {
+        Alert.alert("Error", "Task not found.");
+        return;
+      }
+
+      if (task.recurring) {
+        const choice = await AlertAsync(
+          "Delete Recurring Task",
+          "Would you like to delete just this occurrence or all future occurrences?",
+          [
+            { text: "Just This One", value: "single" },
+            { text: "All Future", value: "future" },
+            { text: "Cancel", value: "cancel" },
+          ]
+        );
+
+        if (choice === "cancel") return;
+
+        if (choice === "future") {
+          // Delete all future occurrences
+          await db.runAsync(
+            `DELETE FROM tasks 
+             WHERE (id = ? OR parentTaskId = ?) 
+             AND dueDate >= ?`,
+            [
+              task.parentTaskId || task.id,
+              task.parentTaskId || task.id,
+              task.dueDate,
+            ]
+          );
+        } else {
+          // Delete just this occurrence
+          await db.runAsync("DELETE FROM tasks WHERE id = ?", [id]);
+        }
+      } else {
+        // Regular delete for non-recurring tasks
+        await db.runAsync("DELETE FROM tasks WHERE id = ?", [id]);
+      }
+
+      await loadTasksFromDB(db);
     } catch (error) {
-      console.log("Error deleting task:", error);
+      console.error("Error deleting task:", error);
+      Alert.alert("Error", "Failed to delete task. Please try again.");
     }
   };
 
   const handleDateSelect = (date) => {
     const tasksForDate = tasks.filter((task) => task.dueDate.startsWith(date));
+  };
+
+  const archiveTask = async (id) => {
+    try {
+      const task = await db.getFirstAsync("SELECT * FROM tasks WHERE id = ?", [
+        id,
+      ]);
+
+      if (!task) {
+        Alert.alert("Error", "Task not found.");
+        return;
+      }
+
+      if (task.recurring) {
+        const choice = await AlertAsync(
+          "Archive Recurring Task",
+          "Would you like to archive just this occurrence or all future occurrences?",
+          [
+            { text: "Just This One", value: "single" },
+            { text: "All Future", value: "future" },
+            { text: "Cancel", value: "cancel" },
+          ]
+        );
+
+        if (choice === "cancel") return;
+
+        if (choice === "future") {
+          // Archive all future occurrences
+          await db.runAsync(
+            `UPDATE tasks 
+             SET status = 'Archived' 
+             WHERE (id = ? OR parentTaskId = ?) 
+             AND dueDate >= ?`,
+            [
+              task.parentTaskId || task.id,
+              task.parentTaskId || task.id,
+              task.dueDate,
+            ]
+          );
+        } else {
+          // Archive just this occurrence
+          await updateTaskStatus(id, "Archived");
+        }
+      } else {
+        // Regular archive for non-recurring tasks
+        await updateTaskStatus(id, "Archived");
+      }
+
+      await loadTasksFromDB(db);
+    } catch (error) {
+      console.error("Error archiving task:", error);
+      Alert.alert("Error", "Failed to archive task. Please try again.");
+    }
   };
 
   const renderTask = ({ item }) => {
@@ -533,10 +995,10 @@ function MainScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconButton}
-                onPress={() => cancelTask(item.id)}
+                onPress={() => archiveTask(item.id)} // Changed from cancelTask to archiveTask
               >
                 <Image
-                  source={require("./assets/x.png")}
+                  source={require("./assets/archive.png")}
                   style={styles.iconImage}
                 />
               </TouchableOpacity>
@@ -641,46 +1103,74 @@ function MainScreen() {
           style={{ flex: 1 }}
         >
           <ScrollView contentContainerStyle={styles.modalView}>
+            {/* <Text style={styles.modalTitle}>
+              {editingTaskId ? "Update Task" : "Add Task"}
+            </Text> */}
             <TextInput
               style={styles.input}
               placeholder="Task Title"
+              placeholderTextColor="#999" // Set placeholder text color to a lighter shade
               value={newTask.title}
               onChangeText={(text) => setNewTask({ ...newTask, title: text })}
             />
+
             <TextInput
               style={styles.input}
               placeholder="Task Description"
+              placeholderTextColor="#999" // Set placeholder text color to a lighter shade
               value={newTask.description}
               onChangeText={(text) =>
                 setNewTask({ ...newTask, description: text })
               }
             />
-            <Picker
-              selectedValue={newTask.interval}
-              style={styles.picker}
-              onValueChange={(itemValue) =>
-                setNewTask({ ...newTask, interval: itemValue })
-              }
-            >
-              <Picker.Item label="Select Interval" value="" />
-              <Picker.Item label="Daily" value="Daily" />
-              <Picker.Item label="Weekly" value="Weekly" />
-              <Picker.Item label="Fortnightly" value="Fortnightly" />
-              <Picker.Item label="Monthly" value="Monthly" />
-              <Picker.Item label="Yearly" value="Yearly" />
-            </Picker>
+
+            {/* Add the Recurring Switch */}
+            <View style={styles.switchContainer}>
+              <Text style={styles.switchLabel}>Recurring Task</Text>
+              <Switch
+                value={newTask.recurring}
+                onValueChange={(value) => {
+                  setNewTask({
+                    ...newTask,
+                    recurring: value,
+                    interval: value ? newTask.interval : "", // Clear interval if recurring is turned off
+                  });
+                }}
+              />
+            </View>
+
+            {/* Show interval picker only if recurring is true */}
+            {newTask.recurring && (
+              <Picker
+                selectedValue={newTask.interval}
+                style={styles.picker}
+                onValueChange={(itemValue) =>
+                  setNewTask({ ...newTask, interval: itemValue.toLowerCase() })
+                }
+              >
+                <Picker.Item label="Select Interval" value="" />
+                <Picker.Item label="Daily" value="daily" />
+                <Picker.Item label="Weekly" value="weekly" />
+                <Picker.Item label="Fortnightly" value="fortnightly" />
+                <Picker.Item label="Monthly" value="monthly" />
+                <Picker.Item label="Yearly" value="yearly" />
+              </Picker>
+            )}
+
             <TouchableOpacity
               style={styles.customButton}
               onPress={() => setShowDatePicker(true)}
             >
               <Text style={styles.buttonText}>Select Due Date</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.customButton}
               onPress={() => setShowTimePicker(true)}
             >
               <Text style={styles.buttonText}>Select Due Time</Text>
             </TouchableOpacity>
+
             {showDatePicker && (
               <DateTimePicker
                 value={newTask.dueDate}
@@ -701,6 +1191,7 @@ function MainScreen() {
                 }}
               />
             )}
+
             {showTimePicker && (
               <DateTimePicker
                 value={newTask.dueDate}
@@ -721,9 +1212,11 @@ function MainScreen() {
                 }}
               />
             )}
+
             <Text>
               Selected Date and Time: {formatDateTime(newTask.dueDate)}
             </Text>
+
             <TouchableOpacity
               style={styles.customButton}
               onPress={handleSaveTask}
@@ -732,6 +1225,7 @@ function MainScreen() {
                 {editingTaskId ? "Update Task" : "Add Task"}
               </Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.customButton}
               onPress={() => setModalVisible(false)}
@@ -755,6 +1249,10 @@ export default function App() {
           <Drawer.Screen
             name="Completed Tasks"
             component={CompletedTasksScreen}
+          />
+          <Drawer.Screen
+            name="Archived Tasks"
+            component={ArchivedTasksScreen}
           />
           <Drawer.Screen name="History" component={TaskHistoryView} />
           <Drawer.Screen name="Settings" component={SettingsScreen} />
