@@ -11,7 +11,7 @@ The Event Scheduler App is a mobile application developed by Swift Ninjas for IT
 - Recurring task support
 - Notifications for upcoming and overdue tasks
 - Color-coded task status
-- Dark mode support
+- Different colour themes
 - Task history tracking
 
 ## Technologies Used
@@ -42,6 +42,7 @@ To run this project locally, follow these steps:
 4. Navigate to the project directory:
 
    ```sh
+   cd Swift-Ninjas-IT-Project-2
    cd event-scheduler-app
    ```
 
@@ -57,7 +58,9 @@ To run this project locally, follow these steps:
    npx expo start
    ```
 
-7. Use the Expo Go app on your mobile device to scan the QR code displayed in the terminal, or run the app on an emulator.
+7. To use the Expo Go app on your iPhone you must scan the QR code displayed in the terminal, or run the app on an a mac using the simulator.
+
+8. Be aware that the application can run on your browser but will not save anything nor function correctly.
 
 ## Usage
 
@@ -66,22 +69,6 @@ To run this project locally, follow these steps:
 - Edit or delete tasks by selecting them
 - Mark tasks as complete or archive them
 - Check task history in the History tab
-- Customize app settings in the Settings tab
-
-## Contributing
-
-This project is part of an academic assignment and is not open for external contributions at this time.
-
-## License
-
-This project is for educational purposes only and is not licensed for commercial use.
-
-## Contact
-
-For any queries regarding this project, please contact:
-
-[Your Team Contact Information]
-
----
+- Customise app settings in the Settings tab
 
 Developed by Swift Ninjas for IT Project 2.
