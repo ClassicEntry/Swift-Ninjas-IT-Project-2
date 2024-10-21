@@ -36,7 +36,7 @@ To run this project locally, follow these steps:
 3. Clone the repository:
 
    ```sh
-   git clone https://github.com/your-repo-url/Swift-Ninjas-IT-Project-2.git
+   git clone https://github.com/ClassicEntry/Swift-Ninjas-IT-Project-2.git
    ```
 
 4. Navigate to the project directory:
@@ -61,6 +61,12 @@ To run this project locally, follow these steps:
 7. To use the Expo Go app on your iPhone you must scan the QR code displayed in the terminal, or run the app on an a mac using the simulator.
 
 8. Be aware that the application can run on your browser but will not save anything nor function correctly.
+
+9. To run the unit tests please use the following command:
+
+   ```sh
+   npm test
+   ```
 
 ## Usage
 
