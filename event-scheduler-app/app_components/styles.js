@@ -134,7 +134,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#00ACC1",
     flexDirection: "row",
     justifyContent: "space-around",
-    marginVertical: 10,
     padding: 10,
   },
   selectedDateContainer: {

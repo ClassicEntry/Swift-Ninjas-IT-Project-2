@@ -416,19 +416,43 @@ function MainScreen() {
     }
   };
 
-  const loadTasksFromDB = async (database) => {
+  const loadTasksFromDB = async (database, filterDays = null) => {
     try {
       const result = await database.getAllAsync(
         `SELECT * FROM tasks 
-         WHERE status != 'Done' 
-         AND status != 'Completed' 
-         AND status != 'Archived' 
-         ORDER BY dueDate ASC`
+       WHERE status != 'Done' 
+       AND status != 'Completed' 
+       AND status != 'Archived' 
+       ORDER BY dueDate ASC`
       );
-      setTasks(sortTasksByDueDate(result));
+
+      if (filterDays) {
+        const now = new Date();
+        const endDate = new Date();
+        endDate.setDate(now.getDate() + filterDays);
+
+        const filteredTasks = filterTasksByDateRange(result, now, endDate);
+        setTasks(sortTasksByDueDate(filteredTasks));
+      } else {
+        setTasks(sortTasksByDueDate(result));
+      }
     } catch (error) {
       console.log("Error loading tasks:", error);
     }
+  };
+
+  const handleCalendarAddTask = async (date) => {
+    setNewTask({
+      ...newTask,
+      dueDate: new Date(date),
+    });
+    setModalVisible(true);
+    // Ensure tasks are reloaded after modal is closed
+    const handleModalClose = () => {
+      loadTasksFromDB(db);
+      setModalVisible(false);
+    };
+    setModalVisible(true, handleModalClose);
   };
 
   const handleSaveTask = async () => {
@@ -700,20 +724,19 @@ function MainScreen() {
   };
 
   const sortTasksByDueDate = (tasks) => {
-    const now = new Date();
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(now.getDate() + 7);
+    return [...tasks].sort((a, b) => {
+      const dateA = new Date(a.dueDate);
+      const dateB = new Date(b.dueDate);
+      return dateA - dateB;
+    });
+  };
 
-    return [...tasks]
-      .filter((task) => {
-        const dueDate = new Date(task.dueDate);
-        return dueDate <= sevenDaysFromNow;
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a.dueDate);
-        const dateB = new Date(b.dueDate);
-        return dateA - dateB;
-      });
+  // 2. Create a separate function for filtering tasks by date range if needed
+  const filterTasksByDateRange = (tasks, startDate, endDate) => {
+    return tasks.filter((task) => {
+      const taskDate = new Date(task.dueDate);
+      return taskDate >= startDate && taskDate <= endDate;
+    });
   };
 
   const markTaskAsDone = async (id) => {
@@ -1047,18 +1070,39 @@ function MainScreen() {
         <Text style={styles.currentDateTime}>
           Today's Date: {formatDateTime(currentDateTime)}
         </Text>
-        <Image
-          source={require("./assets/NinjaLogo.png")} // Make sure the path is correct
-          style={styles.ninjaLogo} // Define this style for proper positioning
-        />
       </View>
       <View style={styles.list_calendar}>
         <TouchableOpacity onPress={() => setView("list")}>
-          <Text>Upcoming tasks</Text>
+          <Text>Tasks</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setView("calendar")}>
           <Text>Calendar</Text>
         </TouchableOpacity>
+        {view === "list" && (
+          <TouchableOpacity
+            onPress={() => {
+              const useFilter =
+                tasks.length ===
+                filterTasksByDateRange(
+                  tasks,
+                  new Date(),
+                  new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+                ).length;
+              loadTasksFromDB(db, useFilter ? null : 7);
+            }}
+          >
+            <Text>
+              {tasks.length ===
+              filterTasksByDateRange(
+                tasks,
+                new Date(),
+                new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+              ).length
+                ? "Show All"
+                : "Show Upcoming"}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
       {view === "list" ? (
         <FlatList
@@ -1073,13 +1117,7 @@ function MainScreen() {
           tasks={tasks}
           onUpdateTask={handleEditTask}
           onDeleteTask={handleDeleteTask}
-          onAddTask={(date) => {
-            setNewTask({
-              ...newTask,
-              dueDate: new Date(date),
-            });
-            setModalVisible(true);
-          }}
+          onAddTask={handleCalendarAddTask}
         />
       ) : (
         <TaskHistoryView />

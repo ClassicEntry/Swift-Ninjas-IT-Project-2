@@ -1,70 +1,154 @@
-// TaskHistoryView.js
-
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  SafeAreaView,
+} from "react-native";
 import * as SQLite from "expo-sqlite";
 
 const TaskHistoryView = () => {
   const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [db, setDb] = useState(null);
 
   useEffect(() => {
-    const initDatabase = async () => {
-      const database = await SQLite.openDatabaseAsync("tasks.db");
-      setDb(database);
-      await loadTaskHistory(database);
+    let isMounted = true;
+
+    const initializeDatabase = async () => {
+      try {
+        setLoading(true);
+        const database = await SQLite.openDatabaseAsync("tasks.db");
+
+        if (isMounted) {
+          setDb(database);
+          await loadTaskHistory(database);
+        }
+      } catch (err) {
+        console.error("Database initialization error:", err);
+        if (isMounted) {
+          setError("Failed to load task history");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
     };
 
-    initDatabase();
+    initializeDatabase();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const loadTaskHistory = async (database) => {
     try {
       const result = await database.getAllAsync(`
-        SELECT h.*, t.title, t.description, 
-               CASE 
-                 WHEN t.id IS NULL THEN 'Deleted'
-                 ELSE t.status
-               END AS current_status
-        FROM history h 
-        LEFT JOIN tasks t ON h.taskId = t.id 
+        SELECT 
+          h.id,
+          h.taskId,
+          h.oldStatus,
+          h.newStatus,
+          h.changeDate,
+          t.title,
+          t.description,
+          CASE 
+            WHEN t.id IS NULL THEN 'Deleted'
+            ELSE t.status 
+          END as current_status
+        FROM history h
+        LEFT JOIN tasks t ON h.taskId = t.id
         ORDER BY h.changeDate DESC
       `);
+
       setHistory(result);
-    } catch (error) {
-      console.log("Error loading task history:", error);
+    } catch (err) {
+      console.error("Error loading task history:", err);
+      setError("Failed to load task history");
+      setHistory([]);
     }
   };
 
+  const getStatusChangeText = (oldStatus, newStatus) => {
+    if (oldStatus === "Created" && newStatus === "Pending") {
+      return "Task created";
+    }
+    return `Status changed from ${oldStatus} to ${newStatus}`;
+  };
+
   const renderHistoryItem = ({ item }) => (
-    <View style={styles.historyItem}>
-      <Text style={styles.historyTitle}>{item.title || "Deleted Task"}</Text>
-      <Text style={styles.historyDescription}>
-        {item.description || "No description available"}
+    <View
+      style={[
+        styles.historyItem,
+        item.current_status === "Deleted" && styles.deletedHistoryItem,
+      ]}
+    >
+      <Text style={styles.historyTitle}>
+        {item.title || "Task no longer exists"}
       </Text>
       <Text style={styles.historyStatus}>
-        Status changed from {item.oldStatus} to {item.newStatus}
+        {getStatusChangeText(item.oldStatus, item.newStatus)}
       </Text>
       <Text style={styles.historyDate}>
-        Date: {new Date(item.changeDate).toLocaleString()}
+        {new Date(item.changeDate).toLocaleString()}
       </Text>
-      <Text style={styles.currentStatus}>
+      <Text
+        style={[
+          styles.currentStatus,
+          item.current_status === "Deleted" && styles.deletedStatus,
+        ]}
+      >
         Current Status: {item.current_status}
       </Text>
     </View>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#006064" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
-    <FlatList
-      data={history}
-      renderItem={renderHistoryItem}
-      keyExtractor={(item) => item.id.toString()}
-      contentContainerStyle={styles.historyList}
-    />
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={history}
+        renderItem={renderHistoryItem}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.historyList}
+        onRefresh={() => loadTaskHistory(db)}
+        refreshing={loading}
+      />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
   historyList: {
     padding: 10,
   },
@@ -79,15 +163,16 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  deletedHistoryItem: {
+    backgroundColor: "#f8f8f8",
+    borderColor: "#e0e0e0",
+    borderWidth: 1,
+  },
   historyTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#006064",
-  },
-  historyDescription: {
-    fontSize: 14,
-    color: "#004D40",
-    marginTop: 5,
+    marginBottom: 5,
   },
   historyStatus: {
     fontSize: 14,
@@ -104,6 +189,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#006064",
     marginTop: 5,
+  },
+  deletedStatus: {
+    color: "#9e9e9e",
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#d32f2f",
+    textAlign: "center",
   },
 });
 
