@@ -700,15 +700,25 @@ function MainScreen() {
   };
 
   const sortTasksByDueDate = (tasks) => {
-    return [...tasks].sort((a, b) => {
-      const dateA = new Date(a.dueDate);
-      const dateB = new Date(b.dueDate);
-      return dateA - dateB;
-    });
+    const now = new Date();
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(now.getDate() + 7);
+
+    return [...tasks]
+      .filter((task) => {
+        const dueDate = new Date(task.dueDate);
+        return dueDate <= sevenDaysFromNow;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.dueDate);
+        const dateB = new Date(b.dueDate);
+        return dateA - dateB;
+      });
   };
 
   const markTaskAsDone = async (id) => {
     await handleTaskComplete(id);
+    await updateTaskStatus(id, "Done");
     try {
       const task = await db.getFirstAsync("SELECT * FROM tasks WHERE id = ?", [
         id,
@@ -875,6 +885,7 @@ function MainScreen() {
   };
 
   const archiveTask = async (id) => {
+    await updateTaskStatus(id, "Archived");
     try {
       const task = await db.getFirstAsync("SELECT * FROM tasks WHERE id = ?", [
         id,
@@ -1043,10 +1054,10 @@ function MainScreen() {
       </View>
       <View style={styles.list_calendar}>
         <TouchableOpacity onPress={() => setView("list")}>
-          <Text>List View</Text>
+          <Text>Upcoming tasks</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setView("calendar")}>
-          <Text>Calendar View</Text>
+          <Text>Calendar</Text>
         </TouchableOpacity>
       </View>
       {view === "list" ? (
