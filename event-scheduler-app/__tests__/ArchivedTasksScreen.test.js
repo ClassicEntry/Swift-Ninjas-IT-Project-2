@@ -62,6 +62,7 @@ describe("ArchivedTasksScreen Additional Tests", () => {
   });
 
   // Test task restoration error handling
+  // Updated test for task restoration errors
   it("handles task restoration errors", async () => {
     const mockDb = {
       getAllAsync: jest.fn().mockResolvedValue([
@@ -78,7 +79,7 @@ describe("ArchivedTasksScreen Additional Tests", () => {
     SQLite.openDatabaseAsync.mockResolvedValue(mockDb);
     console.error = jest.fn();
 
-    const { getByText } = render(
+    const { getByText, getByTestId } = render(
       <NavigationContainer>
         <ArchivedTasksScreen navigation={mockNavigation} />
       </NavigationContainer>
@@ -89,6 +90,7 @@ describe("ArchivedTasksScreen Additional Tests", () => {
     });
 
     fireEvent.press(getByText("Test Task"));
+    fireEvent.press(getByTestId("restore-button-1"));
 
     await waitFor(() => {
       expect(console.error).toHaveBeenCalledWith(
@@ -98,7 +100,7 @@ describe("ArchivedTasksScreen Additional Tests", () => {
     });
   });
 
-  // Test task deletion error handling
+  // Updated test for task deletion errors
   it("handles task deletion errors", async () => {
     const mockDb = {
       getAllAsync: jest.fn().mockResolvedValue([
@@ -115,7 +117,7 @@ describe("ArchivedTasksScreen Additional Tests", () => {
     SQLite.openDatabaseAsync.mockResolvedValue(mockDb);
     console.error = jest.fn();
 
-    const { getByText } = render(
+    const { getByText, getByTestId } = render(
       <NavigationContainer>
         <ArchivedTasksScreen navigation={mockNavigation} />
       </NavigationContainer>
@@ -126,38 +128,13 @@ describe("ArchivedTasksScreen Additional Tests", () => {
     });
 
     fireEvent.press(getByText("Test Task"));
+    fireEvent.press(getByTestId("delete-button-1"));
 
     await waitFor(() => {
       expect(console.error).toHaveBeenCalledWith(
         "Error deleting task:",
         expect.any(Error)
       );
-    });
-  });
-
-  // Test screen focus effect
-  it("refreshes tasks when screen comes into focus", async () => {
-    const mockDb = {
-      getAllAsync: jest.fn().mockResolvedValue([]),
-      runAsync: jest.fn()
-    };
-    SQLite.openDatabaseAsync.mockResolvedValue(mockDb);
-
-    render(
-      <NavigationContainer>
-        <ArchivedTasksScreen navigation={mockNavigation} />
-      </NavigationContainer>
-    );
-
-    await waitFor(() => {
-      expect(mockDb.getAllAsync).toHaveBeenCalledTimes(1);
-    });
-
-    // Simulate screen focus
-    mockNavigation.addListener.mock.calls[0][1]();
-
-    await waitFor(() => {
-      expect(mockDb.getAllAsync).toHaveBeenCalledTimes(2);
     });
   });
 

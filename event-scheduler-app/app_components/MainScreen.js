@@ -1157,6 +1157,7 @@ export function MainScreen() {
         />
       ) : view === "calendar" ? (
         <CalendarView
+          testID={`calendar-day-${date.toISOString().split("T")[0]}`}
           tasks={tasks}
           onUpdateTask={handleEditTask}
           onDeleteTask={handleDeleteTask}
@@ -1222,6 +1223,7 @@ export function MainScreen() {
             <View style={styles.switchContainer}>
               <Text style={styles.switchLabel}>Recurring Task</Text>
               <Switch
+                testID="recurring-switch"
                 value={newTask.recurring}
                 onValueChange={(value) => {
                   setNewTask({
@@ -1236,6 +1238,7 @@ export function MainScreen() {
             {/* Show interval picker only if recurring is true */}
             {newTask.recurring && (
               <Picker
+                testID="interval-picker"
                 selectedValue={newTask.interval}
                 style={styles.picker}
                 onValueChange={(itemValue) =>
@@ -1267,6 +1270,7 @@ export function MainScreen() {
 
             {showDatePicker && (
               <DateTimePicker
+                testID="date-picker"
                 value={newTask.dueDate}
                 mode="date"
                 display="default"
@@ -1288,6 +1292,7 @@ export function MainScreen() {
 
             {showTimePicker && (
               <DateTimePicker
+                testID="time-picker"
                 value={newTask.dueDate}
                 mode="time"
                 display="default"

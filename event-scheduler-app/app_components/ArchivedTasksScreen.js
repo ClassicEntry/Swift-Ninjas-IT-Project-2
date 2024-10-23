@@ -166,6 +166,7 @@ function ArchivedTasksScreen({ navigation }) {
             <Text style={styles.taskText}>Status: {item.status}</Text>
             <View style={styles.buttonContainer}>
               <TouchableOpacity
+                testID={`restore-button-${item.id}`}
                 style={styles.iconButton}
                 onPress={async () => {
                   await restoreTask(item.id);
@@ -178,6 +179,7 @@ function ArchivedTasksScreen({ navigation }) {
                 />
               </TouchableOpacity>
               <TouchableOpacity
+                testID={`delete-button-${item.id}`}
                 style={styles.iconButton}
                 onPress={async () => {
                   await deleteTask(item.id);

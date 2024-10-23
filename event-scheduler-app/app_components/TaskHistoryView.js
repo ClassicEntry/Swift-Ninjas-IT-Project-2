@@ -161,8 +161,12 @@ const TaskHistoryView = () => {
   // Render loading indicator if data is still loading
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#006064" />
+      <View style={styles.centerContainer} testID="loading-container">
+        <ActivityIndicator
+          size="large"
+          color="#006064"
+          testID="loading-indicator"
+        />
       </View>
     );
   }
@@ -180,6 +184,7 @@ const TaskHistoryView = () => {
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
+        testID="history-list"
         data={history}
         renderItem={renderHistoryItem}
         keyExtractor={(item) => item.id.toString()}

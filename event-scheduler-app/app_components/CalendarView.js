@@ -252,6 +252,7 @@ const CalendarView = ({ tasks, onUpdateTask, onDeleteTask, onAddTask }) => {
   return (
     <View style={styles.container}>
       <Calendar
+        testID="calendar"
         current={currentDate}
         onDayPress={onDayPress}
         markedDates={{

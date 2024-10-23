@@ -1,68 +1,199 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, fireEvent } from "@testing-library/react-native";
+import { View, TouchableOpacity, Text } from "react-native";
 import { ThemeProvider, useTheme } from "../app_components/ThemeContext";
 
-const TestComponent = () => {
-  const { theme } = useTheme();
-  return (
-    <div>
-      <div data-testid="primary-color">{theme.primary}</div>
-      <div data-testid="background-color">{theme.background}</div>
-      <div data-testid="text-color">{theme.text}</div>
-      <div data-testid="task-background-color">{theme.taskBackground}</div>
-    </div>
-  );
-};
-
 describe("ThemeContext", () => {
-  it("provides the correct default theme values", () => {
-    render(
+  it("provides the default theme", () => {
+    const TestComponent = () => {
+      const { theme } = useTheme();
+      return (
+        <View testID="test-view" style={{ backgroundColor: theme.primary }}>
+          <Text>Test</Text>
+        </View>
+      );
+    };
+
+    const { getByTestId } = render(
       <ThemeProvider>
         <TestComponent />
       </ThemeProvider>
     );
 
-    expect(screen.getByTestId("primary-color").textContent).toBe("#007AFF");
-    expect(screen.getByTestId("background-color").textContent).toBe("#F2F2F7");
-    expect(screen.getByTestId("text-color").textContent).toBe("#000000");
-    expect(screen.getByTestId("task-background-color").textContent).toBe(
-      "#FFFFFF"
+    const testView = getByTestId("test-view");
+    expect(testView.props.style).toEqual(
+      expect.objectContaining({ backgroundColor: "#006064" })
     );
   });
 
-  it("allows theme to be updated", () => {
-    const NewThemeComponent = () => {
+  it("allows updating the theme", () => {
+    const TestComponent = () => {
       const { theme, setTheme } = useTheme();
-      React.useEffect(() => {
-        setTheme({
-          primary: "#FF5733",
-          background: "#C70039",
-          text: "#900C3F",
-          taskBackground: "#581845"
-        });
-      }, [setTheme]);
-
       return (
-        <div>
-          <div data-testid="primary-color">{theme.primary}</div>
-          <div data-testid="background-color">{theme.background}</div>
-          <div data-testid="text-color">{theme.text}</div>
-          <div data-testid="task-background-color">{theme.taskBackground}</div>
-        </div>
+        <View>
+          <View testID="test-view" style={{ backgroundColor: theme.primary }}>
+            <Text>Test</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setTheme({ primary: "#FF0000" })}
+            testID="theme-button"
+          >
+            <Text>Change Theme</Text>
+          </TouchableOpacity>
+        </View>
       );
     };
 
-    render(
+    const { getByTestId } = render(
       <ThemeProvider>
-        <NewThemeComponent />
+        <TestComponent />
       </ThemeProvider>
     );
 
-    expect(screen.getByTestId("primary-color").textContent).toBe("#FF5733");
-    expect(screen.getByTestId("background-color").textContent).toBe("#C70039");
-    expect(screen.getByTestId("text-color").textContent).toBe("#900C3F");
-    expect(screen.getByTestId("task-background-color").textContent).toBe(
-      "#581845"
+    const testView = getByTestId("test-view");
+    expect(testView.props.style).toEqual(
+      expect.objectContaining({ backgroundColor: "#006064" })
     );
+
+    const button = getByTestId("theme-button");
+    fireEvent.press(button);
+
+    expect(testView.props.style).toEqual(
+      expect.objectContaining({ backgroundColor: "#FF0000" })
+    );
+  });
+
+  it("ensures all theme properties are present when updating the theme", () => {
+    const TestComponent = () => {
+      const { theme, setTheme } = useTheme();
+      return (
+        <View>
+          <View
+            testID="test-view"
+            style={{
+              backgroundColor: theme.primary,
+              borderColor: theme.background
+            }}
+          >
+            <Text>Test</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setTheme({ primary: "#FF0000" })}
+            testID="theme-button"
+          >
+            <Text>Change Theme</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    };
+
+    const { getByTestId } = render(
+      <ThemeProvider>
+        <TestComponent />
+      </ThemeProvider>
+    );
+
+    const testView = getByTestId("test-view");
+    expect(testView.props.style).toEqual(
+      expect.objectContaining({
+        backgroundColor: "#006064",
+        borderColor: "#F2F2F7"
+      })
+    );
+
+    const button = getByTestId("theme-button");
+    fireEvent.press(button);
+
+    expect(testView.props.style).toEqual(
+      expect.objectContaining({
+        backgroundColor: "#FF0000",
+        borderColor: "#F2F2F7"
+      })
+    );
+  });
+
+  it("does not throw an error if useTheme is used within ThemeProvider", () => {
+    const TestComponent = () => {
+      const { theme } = useTheme();
+      return (
+        <View testID="test-view">
+          <Text>{theme.primary}</Text>
+        </View>
+      );
+    };
+
+    expect(() => {
+      render(
+        <ThemeProvider>
+          <TestComponent />
+        </ThemeProvider>
+      );
+    }).not.toThrow();
+  });
+
+  it("provides all default theme properties", () => {
+    const TestComponent = () => {
+      const { theme } = useTheme();
+      return (
+        <View testID="theme-test">
+          <Text testID="primary">{theme.primary}</Text>
+          <Text testID="background">{theme.background}</Text>
+          <Text testID="text">{theme.text}</Text>
+          <Text testID="taskBackground">{theme.taskBackground}</Text>
+          <Text testID="accent">{theme.accent}</Text>
+          <Text testID="error">{theme.error}</Text>
+          <Text testID="warning">{theme.warning}</Text>
+          <Text testID="success">{theme.success}</Text>
+        </View>
+      );
+    };
+
+    const { getByTestId } = render(
+      <ThemeProvider>
+        <TestComponent />
+      </ThemeProvider>
+    );
+
+    // Get the Text components and check their children props instead of using toHaveTextContent
+    expect(getByTestId("primary").props.children).toBe("#006064");
+    expect(getByTestId("background").props.children).toBe("#F2F2F7");
+    expect(getByTestId("text").props.children).toBe("#000000");
+    expect(getByTestId("taskBackground").props.children).toBe("#FFFFFF");
+    expect(getByTestId("accent").props.children).toBe("#34C759");
+    expect(getByTestId("error").props.children).toBe("#FF3B30");
+    expect(getByTestId("warning").props.children).toBe("#FF9500");
+    expect(getByTestId("success").props.children).toBe("#30D158");
+  });
+
+  it("preserves default theme values when partially updating theme", () => {
+    const TestComponent = () => {
+      const { theme, setTheme } = useTheme();
+      return (
+        <View>
+          <View testID="theme-view">
+            <Text testID="primary">{theme.primary}</Text>
+            <Text testID="background">{theme.background}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setTheme({ primary: "#FF0000" })}
+            testID="theme-button"
+          >
+            <Text>Update Theme</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    };
+
+    const { getByTestId } = render(
+      <ThemeProvider>
+        <TestComponent />
+      </ThemeProvider>
+    );
+
+    const button = getByTestId("theme-button");
+    fireEvent.press(button);
+
+    expect(getByTestId("primary").props.children).toBe("#FF0000");
+    expect(getByTestId("background").props.children).toBe("#F2F2F7");
   });
 });
