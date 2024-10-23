@@ -5,16 +5,48 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  SafeAreaView,
+  SafeAreaView
 } from "react-native";
 import * as SQLite from "expo-sqlite";
 
+/**
+ * TaskHistoryView component displays the history of task status changes.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered TaskHistoryView component.
+ *
+ * @example
+ * return (
+ *   <TaskHistoryView />
+ * )
+ *
+ * @function
+ * @name TaskHistoryView
+ *
+ * @description
+ * This component:
+ * - Initializes the SQLite database.
+ * - Loads task history from the database.
+ * - Displays task history in a list format.
+ * - Handles loading and error states.
+ *
+ * @requires useState - React hook to manage component state.
+ * @requires useEffect - React hook to perform side effects in the component.
+ * @requires SQLite - Module to interact with SQLite database.
+ * @requires View - React Native component for rendering views.
+ * @requires Text - React Native component for rendering text.
+ * @requires FlatList - React Native component for rendering lists.
+ * @requires StyleSheet - React Native module for creating styles.
+ * @requires ActivityIndicator - React Native component for displaying loading indicators.
+ * @requires SafeAreaView - React Native component for safe area views.
+ */
 const TaskHistoryView = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [db, setDb] = useState(null);
 
+  // Initialize the database and load task history when the component mounts
   useEffect(() => {
     let isMounted = true;
 
@@ -46,6 +78,11 @@ const TaskHistoryView = () => {
     };
   }, []);
 
+  /**
+   * Loads task history from the database.
+   *
+   * @param {Object} database - The SQLite database instance.
+   */
   const loadTaskHistory = async (database) => {
     try {
       const result = await database.getAllAsync(`
@@ -74,6 +111,13 @@ const TaskHistoryView = () => {
     }
   };
 
+  /**
+   * Returns a text description of the status change.
+   *
+   * @param {string} oldStatus - The old status of the task.
+   * @param {string} newStatus - The new status of the task.
+   * @returns {string} The status change text.
+   */
   const getStatusChangeText = (oldStatus, newStatus) => {
     if (oldStatus === "Created" && newStatus === "Pending") {
       return "Task created";
@@ -81,11 +125,17 @@ const TaskHistoryView = () => {
     return `Status changed from ${oldStatus} to ${newStatus}`;
   };
 
+  /**
+   * Renders a single history item.
+   *
+   * @param {Object} item - The history item to render.
+   * @returns {JSX.Element} The rendered history item.
+   */
   const renderHistoryItem = ({ item }) => (
     <View
       style={[
         styles.historyItem,
-        item.current_status === "Deleted" && styles.deletedHistoryItem,
+        item.current_status === "Deleted" && styles.deletedHistoryItem
       ]}
     >
       <Text style={styles.historyTitle}>
@@ -100,7 +150,7 @@ const TaskHistoryView = () => {
       <Text
         style={[
           styles.currentStatus,
-          item.current_status === "Deleted" && styles.deletedStatus,
+          item.current_status === "Deleted" && styles.deletedStatus
         ]}
       >
         Current Status: {item.current_status}
@@ -108,6 +158,7 @@ const TaskHistoryView = () => {
     </View>
   );
 
+  // Render loading indicator if data is still loading
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -116,6 +167,7 @@ const TaskHistoryView = () => {
     );
   }
 
+  // Render error message if there was an error loading data
   if (error) {
     return (
       <View style={styles.centerContainer}>
@@ -124,6 +176,7 @@ const TaskHistoryView = () => {
     );
   }
 
+  // Render the task history list
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
@@ -138,19 +191,20 @@ const TaskHistoryView = () => {
   );
 };
 
+// Define styles for the component
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#f5f5f5"
   },
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 20
   },
   historyList: {
-    padding: 10,
+    padding: 10
   },
   historyItem: {
     backgroundColor: "#FFFFFF",
@@ -161,43 +215,43 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 3
   },
   deletedHistoryItem: {
     backgroundColor: "#f8f8f8",
     borderColor: "#e0e0e0",
-    borderWidth: 1,
+    borderWidth: 1
   },
   historyTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#006064",
-    marginBottom: 5,
+    marginBottom: 5
   },
   historyStatus: {
     fontSize: 14,
     color: "#00796B",
-    marginTop: 5,
+    marginTop: 5
   },
   historyDate: {
     fontSize: 12,
     color: "#00ACC1",
-    marginTop: 5,
+    marginTop: 5
   },
   currentStatus: {
     fontSize: 14,
     fontWeight: "bold",
     color: "#006064",
-    marginTop: 5,
+    marginTop: 5
   },
   deletedStatus: {
-    color: "#9e9e9e",
+    color: "#9e9e9e"
   },
   errorText: {
     fontSize: 16,
     color: "#d32f2f",
-    textAlign: "center",
-  },
+    textAlign: "center"
+  }
 });
 
 export default TaskHistoryView;

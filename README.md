@@ -25,7 +25,7 @@ The Event Scheduler App is a mobile application developed by Swift Ninjas for IT
 
 To run this project locally, follow these steps:
 
-1. Ensure you have [Node.js](https://nodejs.org/) installed on your system.
+1. Ensure you have [Node.js](https://nodejs.org/) installed on your system and ensure you have Expo Go installed on your phone.
 2. Install React Native and Expo CLI globally:
 
    ```sh

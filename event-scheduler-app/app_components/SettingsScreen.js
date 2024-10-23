@@ -14,6 +14,7 @@ import { useTheme } from "./ThemeContext";
 import * as SQLite from "expo-sqlite";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
+// Define available themes
 
 const themes = {
   default: {
@@ -137,14 +138,31 @@ const themes = {
     success: "#68D391"
   }
 };
-
+/**
+ * StatItem component renders a single statistic item with a label and value.
+ *
+ * @param {Object} props - The component props.
+ * @param {string} props.label - The label for the statistic.
+ * @param {number} props.value - The value of the statistic.
+ * @param {string} props.color - The color for the text.
+ *
+ * @returns {JSX.Element} The rendered StatItem component.
+ */
 const StatItem = ({ label, value, color }) => (
   <View style={styles.statItem}>
     <Text style={[styles.statValue, { color }]}>{value}</Text>
     <Text style={[styles.statLabel, { color }]}>{label}</Text>
   </View>
 );
-
+/**
+ * Section component renders a section with a title and children.
+ *
+ * @param {Object} props - The component props.
+ * @param {string} props.title - The title of the section.
+ * @param {JSX.Element} props.children - The children elements to render within the section.
+ *
+ * @returns {JSX.Element} The rendered Section component.
+ */
 const Section = ({ title, children }) => {
   const { theme } = useTheme();
   return (
@@ -155,6 +173,49 @@ const Section = ({ title, children }) => {
   );
 };
 
+/**
+ * SettingsScreen component provides a user interface for managing application settings,
+ * viewing task statistics, exporting data, and deleting all data.
+ *
+ * @param {Object} props - The component props.
+ * @param {Object} props.navigation - The navigation object provided by React Navigation.
+ *
+ * @returns {JSX.Element} The rendered SettingsScreen component.
+ *
+ * @component
+ *
+ * @example
+ * return (
+ *   <SettingsScreen navigation={navigation} />
+ * )
+ *
+ * @function
+ * @name SettingsScreen
+ *
+ * @description
+ * This component allows users to:
+ * - Toggle between different themes.
+ * - View task statistics including total tasks, completed tasks, archived tasks, and pending tasks.
+ * - Export all task and history data to a JSON file.
+ * - Delete all task and history data from the database.
+ *
+ * @requires useTheme - Custom hook to access and set the current theme.
+ * @requires useState - React hook to manage component state.
+ * @requires useEffect - React hook to perform side effects in the component.
+ * @requires SQLite - Module to interact with SQLite database.
+ * @requires Animated - React Native module for animations.
+ * @requires Alert - React Native module for displaying alerts.
+ * @requires FileSystem - Module to handle file system operations.
+ * @requires Sharing - Module to handle sharing functionality.
+ * @requires Modal - React Native component for displaying modal dialogs.
+ * @requires View - React Native component for rendering views.
+ * @requires Text - React Native component for rendering text.
+ * @requires TouchableOpacity - React Native component for touchable elements.
+ * @requires ScrollView - React Native component for scrollable views.
+ * @requires Section - Custom component for rendering sections.
+ * @requires StatItem - Custom component for rendering individual statistics.
+ * @requires styles - Stylesheet for the component.
+ */
 const SettingsScreen = ({ navigation }) => {
   const { theme, setTheme } = useTheme();
   const [isThemeListVisible, setIsThemeListVisible] = useState(false);
@@ -167,17 +228,21 @@ const SettingsScreen = ({ navigation }) => {
     pendingTasks: 0
   });
   const [showStatsModal, setShowStatsModal] = useState(false);
+  // Initialize the database when the component mounts
 
   useEffect(() => {
     initializeDatabase();
   }, []);
+  // Load task statistics when the database is initialized
 
   useEffect(() => {
     if (db) {
       loadTaskStatistics();
     }
   }, [db]);
-
+  /**
+   * Initializes the SQLite database.
+   */
   const initializeDatabase = async () => {
     try {
       const database = await SQLite.openDatabaseAsync("tasks.db");
@@ -186,7 +251,9 @@ const SettingsScreen = ({ navigation }) => {
       console.error("Database initialization error:", error);
     }
   };
-
+  /**
+   * Loads task statistics from the database.
+   */
   const loadTaskStatistics = async () => {
     if (!db) return;
 
@@ -225,7 +292,9 @@ const SettingsScreen = ({ navigation }) => {
       console.error("Error loading task statistics:", error);
     }
   };
-
+  /**
+   * Deletes all data from the database.
+   */
   const deleteAllData = async () => {
     Alert.alert(
       "Delete All Data",
@@ -249,7 +318,9 @@ const SettingsScreen = ({ navigation }) => {
       ]
     );
   };
-
+  /**
+   * Exports all data to a JSON file and shares it.
+   */
   const exportAllData = async () => {
     try {
       if (!db) return;
@@ -281,7 +352,11 @@ const SettingsScreen = ({ navigation }) => {
       console.error(error);
     }
   };
-
+  /**
+   * Renders the statistics modal.
+   *
+   * @returns {JSX.Element} The rendered statistics modal.
+   */
   const renderStatisticsModal = () => (
     <Modal
       visible={showStatsModal}

@@ -17,6 +17,13 @@ const ThemeContext = createContext({
   setTheme: () => {}
 });
 
+/**
+ * ThemeProvider component that provides theme context to its children.
+ *
+ * @param {Object} props - The properties object.
+ * @param {React.ReactNode} props.children - The child components that will receive the theme context.
+ * @returns {JSX.Element} The ThemeContext.Provider component with the current theme and a function to update the theme.
+ */
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(defaultTheme);
 

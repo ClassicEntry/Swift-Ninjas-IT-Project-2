@@ -24,6 +24,51 @@ import * as SQLite from "expo-sqlite";
 import CalendarView from "./CalendarView";
 import { ThemeProvider, useTheme } from "./ThemeContext";
 
+/**
+ * MainScreen component that handles task management, notifications, and database interactions.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered component.
+ *
+ * @example
+ * <MainScreen />
+ *
+ * @description
+ * This component is responsible for managing tasks, including creating, editing, deleting, and scheduling notifications for tasks. It also handles recurring tasks and maintains a history of task changes.
+ *
+ * @function
+ * @name MainScreen
+ *
+ * @property {Object} theme - The current theme object.
+ * @property {Function} useTheme - Hook to get the current theme.
+ * @property {Function} useState - Hook to manage state.
+ * @property {Function} useEffect - Hook to handle side effects.
+ * @property {Function} AlertAsync - Function to show an alert and return a promise.
+ * @property {Function} initializeDatabase - Function to initialize the SQLite database.
+ * @property {Function} scheduleTaskNotification - Function to schedule notifications for a task.
+ * @property {Function} verifyScheduledNotifications - Function to verify scheduled notifications.
+ * @property {Function} calculateNextOccurrence - Function to calculate the next occurrence of a recurring task.
+ * @property {Function} handleRecurringTaskComplete - Function to handle the completion of a recurring task.
+ * @property {Function} handleTaskComplete - Function to handle the completion of a task.
+ * @property {Function} loadTasksFromDB - Function to load tasks from the database.
+ * @property {Function} handleCalendarAddTask - Function to handle adding a task from the calendar view.
+ * @property {Function} handleSaveTask - Function to handle saving a task.
+ * @property {Function} validateTaskForm - Function to validate the task form.
+ * @property {Function} handleEditTask - Function to handle editing a task.
+ * @property {Function} updateTaskStatus - Function to update the status of a task.
+ * @property {Function} sortTasksByDueDate - Function to sort tasks by due date.
+ * @property {Function} filterTasksByDateRange - Function to filter tasks by date range.
+ * @property {Function} markTaskAsDone - Function to mark a task as done.
+ * @property {Function} cancelTask - Function to cancel a task.
+ * @property {Function} loadTaskHistory - Function to load task history.
+ * @property {Function} handleDeleteTask - Function to handle deleting a task.
+ * @property {Function} deleteTask - Function to delete a task.
+ * @property {Function} handleDateSelect - Function to handle date selection.
+ * @property {Function} archiveTask - Function to archive a task.
+ * @property {Function} renderTask - Function to render a task item.
+ * @property {Function} formatDateTime - Function to format date and time.
+ * @property {Function} TaskHistoryView - Component to display task history.
+ */
 export function MainScreen() {
   const { theme } = useTheme();
   const styles = createStyles(theme);

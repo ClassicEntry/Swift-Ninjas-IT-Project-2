@@ -5,12 +5,49 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  Image,
+  Image
 } from "react-native";
 import * as SQLite from "expo-sqlite";
 import { useTheme } from "./ThemeContext";
 import { useFocusEffect } from "@react-navigation/native";
 
+/**
+ * CompletedTasksScreen component displays a list of completed tasks.
+ * Users can expand tasks to see details and perform actions like undo, archive, or delete.
+ *
+ * @component
+ * @param {Object} props - The component props.
+ * @param {Object} props.navigation - The navigation object provided by React Navigation.
+ * @returns {JSX.Element} The rendered CompletedTasksScreen component.
+ *
+ * @example
+ * return (
+ *   <CompletedTasksScreen navigation={navigation} />
+ * )
+ *
+ * @function
+ * @name CompletedTasksScreen
+ *
+ * @description
+ * This component:
+ * - Initializes the SQLite database.
+ * - Loads completed tasks from the database.
+ * - Displays completed tasks in a list format.
+ * - Allows users to expand tasks to see details.
+ * - Provides actions to undo, archive, or delete tasks.
+ *
+ * @requires useState - React hook to manage component state.
+ * @requires useEffect - React hook to perform side effects in the component.
+ * @requires SQLite - Module to interact with SQLite database.
+ * @requires useTheme - Custom hook to access the current theme.
+ * @requires useFocusEffect - React Navigation hook to handle screen focus events.
+ * @requires View - React Native component for rendering views.
+ * @requires Text - React Native component for rendering text.
+ * @requires FlatList - React Native component for rendering lists.
+ * @requires TouchableOpacity - React Native component for touchable elements.
+ * @requires StyleSheet - React Native module for creating styles.
+ * @requires Image - React Native component for rendering images.
+ */
 function CompletedTasksScreen({ navigation }) {
   const [db, setDb] = useState(null);
   const [completedTasks, setCompletedTasks] = useState([]);
@@ -42,6 +79,11 @@ function CompletedTasksScreen({ navigation }) {
     }, [db])
   );
 
+  /**
+   * Loads completed tasks from the database.
+   *
+   * @param {Object} database - The SQLite database instance.
+   */
   const loadCompletedTasksFromDB = async (database) => {
     try {
       const result = await database.getAllAsync(
@@ -56,14 +98,24 @@ function CompletedTasksScreen({ navigation }) {
     }
   };
 
+  /**
+   * Toggles the expanded state of a task.
+   *
+   * @param {number} taskId - The ID of the task to toggle.
+   */
   const toggleExpand = (taskId) => {
     setExpandedTasks((prevExpandedTasks) => ({
       ...prevExpandedTasks,
-      [taskId]: !prevExpandedTasks[taskId],
+      [taskId]: !prevExpandedTasks[taskId]
     }));
   };
 
-  // Update the renderTask function in CompletedTasksScreen:
+  /**
+   * Renders a single task item.
+   *
+   * @param {Object} item - The task item to render.
+   * @returns {JSX.Element} The rendered task item.
+   */
   const renderTask = ({ item }) => {
     const isExpanded = expandedTasks[item.id];
     const dueDate = new Date(item.dueDate);
@@ -126,11 +178,15 @@ function CompletedTasksScreen({ navigation }) {
     );
   };
 
-  // Add the undoTask function:
+  /**
+   * Undoes the completion of a task by setting its status to 'Pending'.
+   *
+   * @param {number} id - The ID of the task to undo.
+   */
   const undoTask = async (id) => {
     try {
       await db.runAsync("UPDATE tasks SET status = 'Pending' WHERE id = ?", [
-        id,
+        id
       ]);
       await loadCompletedTasksFromDB(db);
     } catch (error) {
@@ -138,10 +194,15 @@ function CompletedTasksScreen({ navigation }) {
     }
   };
 
+  /**
+   * Archives a task by setting its status to 'Archived'.
+   *
+   * @param {number} id - The ID of the task to archive.
+   */
   const archiveTask = async (id) => {
     try {
       await db.runAsync("UPDATE tasks SET status = 'Archived' WHERE id = ?", [
-        id,
+        id
       ]);
       await loadCompletedTasksFromDB(db);
     } catch (error) {
@@ -149,6 +210,11 @@ function CompletedTasksScreen({ navigation }) {
     }
   };
 
+  /**
+   * Deletes a task from the database.
+   *
+   * @param {number} id - The ID of the task to delete.
+   */
   const deleteTask = async (id) => {
     try {
       await db.runAsync("DELETE FROM tasks WHERE id = ?", [id]);
@@ -176,14 +242,15 @@ function CompletedTasksScreen({ navigation }) {
   );
 }
 
+// Define styles for the component
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#fff"
   },
   listContainer: {
-    paddingBottom: 20,
+    paddingBottom: 20
   },
   taskItem: {
     padding: 15,
@@ -194,37 +261,37 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowRadius: 2
   },
   taskTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "600"
   },
   taskDetails: {
-    marginTop: 10,
+    marginTop: 10
   },
   taskText: {
     fontSize: 16,
     marginBottom: 5,
-    color: "#333",
+    color: "#333"
   },
   buttonContainer: {
     flexDirection: "row",
     marginTop: 10,
-    gap: 10,
+    gap: 10
   },
   iconButton: {
-    padding: 5,
+    padding: 5
   },
   icon: {
     width: 24,
-    height: 24,
+    height: 24
   },
   emptyText: {
     fontSize: 16,
     textAlign: "center",
-    color: "#666",
-  },
+    color: "#666"
+  }
 });
 
 export default CompletedTasksScreen;

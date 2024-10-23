@@ -3,11 +3,9 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
-  Modal,
-  StyleSheet,
-  Alert,
   ActivityIndicator,
+  Alert,
+  StyleSheet
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
@@ -15,52 +13,63 @@ import * as Sharing from "expo-sharing";
 import * as IntentLauncher from "expo-intent-launcher";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+/**
+ * AttachmentHandler component handles the addition, viewing, and deletion of attachments for a specific task.
+ *
+ * @param {Object} props - The properties object.
+ * @param {string} props.taskId - The ID of the task to which the attachment belongs.
+ * @param {Object} props.db - The database instance for performing database operations.
+ * @param {Object} [props.currentAttachment] - The current attachment object, if any.
+ * @param {string} props.currentAttachment.uri - The URI of the current attachment.
+ * @param {string} props.currentAttachment.fileName - The file name of the current attachment.
+ * @param {string} props.currentAttachment.type - The MIME type of the current attachment.
+ * @param {Function} props.onAttachmentUpdate - Callback function to notify the parent component of attachment updates.
+ *
+ * @returns {JSX.Element} The rendered component.
+ */
 const AttachmentHandler = ({
   taskId,
   db,
   currentAttachment,
-  onAttachmentUpdate,
+  onAttachmentUpdate
 }) => {
-  const [viewerVisible, setViewerVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Handles adding a new attachment.
+   */
   const handleAddAttachment = async () => {
     try {
       setLoading(true);
-      // Use DocumentPicker with copyToCacheDirectory set to true for immediate access
+      // Use DocumentPicker to pick a document
       const result = await DocumentPicker.getDocumentAsync({
         type: "*/*",
         copyToCacheDirectory: true,
-        multiple: false,
+        multiple: false
       });
 
       if (result.type === "success") {
         // Create a permanent path in app's document directory
-        const permanentPath = `${FileSystem.documentDirectory}task_${taskId}_${result.assets[0].name}`;
+        const permanentPath = `${FileSystem.documentDirectory}task_${taskId}_${result.name}`;
 
         // Copy file from cache to permanent storage
         await FileSystem.copyAsync({
-          from: result.assets[0].uri,
-          to: permanentPath,
+          from: result.uri,
+          to: permanentPath
         });
 
         // Save attachment info to database
         await db.runAsync(
           `INSERT OR REPLACE INTO attachments (taskId, uri, fileName, fileType) 
            VALUES (?, ?, ?, ?)`,
-          [
-            taskId,
-            permanentPath,
-            result.assets[0].name,
-            result.assets[0].mimeType,
-          ]
+          [taskId, permanentPath, result.name, result.mimeType]
         );
 
         // Notify parent component
         onAttachmentUpdate({
           uri: permanentPath,
-          fileName: result.assets[0].name,
-          type: result.assets[0].mimeType,
+          fileName: result.name,
+          type: result.mimeType
         });
 
         Alert.alert("Success", "Attachment added successfully");
@@ -73,6 +82,9 @@ const AttachmentHandler = ({
     }
   };
 
+  /**
+   * Handles viewing the current attachment.
+   */
   const handleViewAttachment = async () => {
     if (!currentAttachment?.uri) {
       Alert.alert("Error", "No attachment found");
@@ -86,7 +98,7 @@ const AttachmentHandler = ({
         return;
       }
 
-      // For Android, we need to create a content URI
+      // For Android, create a content URI and launch the intent
       if (Platform.OS === "android") {
         const contentUri = await FileSystem.getContentUriAsync(
           currentAttachment.uri
@@ -94,10 +106,10 @@ const AttachmentHandler = ({
         await IntentLauncher.startActivityAsync("android.intent.action.VIEW", {
           data: contentUri,
           flags: 1,
-          type: currentAttachment.type || "*/*",
+          type: currentAttachment.type || "*/*"
         });
       } else {
-        // For iOS, we can use sharing
+        // For iOS, use sharing
         await Sharing.shareAsync(currentAttachment.uri);
       }
     } catch (error) {
@@ -106,6 +118,9 @@ const AttachmentHandler = ({
     }
   };
 
+  /**
+   * Handles deleting the current attachment.
+   */
   const handleDeleteAttachment = async () => {
     if (!currentAttachment?.uri) return;
 
@@ -121,20 +136,20 @@ const AttachmentHandler = ({
             onPress: async () => {
               // Delete file from filesystem
               await FileSystem.deleteAsync(currentAttachment.uri, {
-                idempotent: true,
+                idempotent: true
               });
 
               // Remove from database
               await db.runAsync("DELETE FROM attachments WHERE taskId = ?", [
-                taskId,
+                taskId
               ]);
 
               // Update parent component
               onAttachmentUpdate(null);
 
               Alert.alert("Success", "Attachment deleted successfully");
-            },
-          },
+            }
+          }
         ]
       );
     } catch (error) {
@@ -201,34 +216,35 @@ const AttachmentHandler = ({
   );
 };
 
+// Define styles for the component
 const styles = StyleSheet.create({
   container: {
     marginVertical: 10,
-    padding: 10,
+    padding: 10
   },
   attachmentRow: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f8f8f8",
     padding: 10,
-    borderRadius: 8,
+    borderRadius: 8
   },
   viewButton: {
     flex: 1,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "center"
   },
   fileName: {
     marginLeft: 10,
     fontSize: 14,
-    color: "#007AFF",
+    color: "#007AFF"
   },
   actionButtons: {
-    flexDirection: "row",
+    flexDirection: "row"
   },
   iconButton: {
     padding: 5,
-    marginLeft: 10,
+    marginLeft: 10
   },
   addButton: {
     flexDirection: "row",
@@ -236,13 +252,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f8f8",
     padding: 12,
     borderRadius: 8,
-    justifyContent: "center",
+    justifyContent: "center"
   },
   addButtonText: {
     marginLeft: 8,
     color: "#007AFF",
-    fontSize: 16,
-  },
+    fontSize: 16
+  }
 });
 
 export default AttachmentHandler;

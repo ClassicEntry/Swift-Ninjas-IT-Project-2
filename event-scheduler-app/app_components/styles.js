@@ -21,6 +21,14 @@ const defaultColors = {
 };
 
 // Create styles function that allows theming (from first set of styles)
+/**
+ * Generates a set of styles for the event scheduler app components.
+ *
+ * @param {Object} [theme=null] - An optional theme object to override default colors.
+ * @param {string} [theme.background] - Background color for the container.
+ * @param {string} [theme.primary] - Primary color for the title container.
+ * @returns {Object} - A StyleSheet object containing the styles.
+ */
 const createStyles = (theme = null) =>
   StyleSheet.create({
     container: {
