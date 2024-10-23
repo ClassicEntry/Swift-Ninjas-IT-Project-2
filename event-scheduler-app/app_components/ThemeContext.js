@@ -3,7 +3,7 @@ import React, { createContext, useState, useContext } from "react";
 // Define the default theme with all properties
 const defaultTheme = {
   primary: "#006064",
-  background: "#006064",
+  background: "#F2F2F7",
   text: "#000000",
   taskBackground: "#FFFFFF",
   accent: "#34C759",

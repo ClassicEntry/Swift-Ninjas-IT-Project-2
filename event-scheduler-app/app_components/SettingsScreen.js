@@ -27,7 +27,7 @@ const themes = {
     success: "#30D158"
   },
   dark: {
-    primary: "#0A84FF",
+    primary: "#006064",
     background: "#1C1C1E",
     text: "#FFFFFF",
     taskBackground: "#2C2C2E",

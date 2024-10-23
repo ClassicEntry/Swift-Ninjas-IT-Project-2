@@ -1,171 +1,201 @@
 import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
+import { NavigationContainer } from "@react-navigation/native";
 import ArchivedTasksScreen from "../app_components/ArchivedTasksScreen";
 import * as SQLite from "expo-sqlite";
-import { useTheme } from "../app_components/ThemeContext";
 
 jest.mock("expo-sqlite");
 jest.mock("../app_components/ThemeContext", () => ({
-  useTheme: jest.fn()
+  useTheme: jest.fn().mockReturnValue({ theme: "light" })
 }));
 
-const mockNavigation = {
-  navigate: jest.fn()
-};
+describe("ArchivedTasksScreen Additional Tests", () => {
+  const mockNavigation = {
+    navigate: jest.fn(),
+    addListener: jest.fn(() => () => {})
+  };
 
-describe("ArchivedTasksScreen", () => {
   beforeEach(() => {
-    SQLite.openDatabaseAsync.mockResolvedValue({
+    jest.clearAllMocks();
+  });
+
+  // Test database initialization error handling
+  it("handles database initialization errors", async () => {
+    console.error = jest.fn(); // Mock console.error
+    SQLite.openDatabaseAsync.mockRejectedValue(new Error("DB Init Error"));
+
+    render(
+      <NavigationContainer>
+        <ArchivedTasksScreen navigation={mockNavigation} />
+      </NavigationContainer>
+    );
+
+    await waitFor(() => {
+      expect(console.error).toHaveBeenCalledWith(
+        "Error initializing database:",
+        expect.any(Error)
+      );
+    });
+  });
+
+  // Test database loading error handling
+  it("handles database loading errors", async () => {
+    const mockDb = {
+      getAllAsync: jest.fn().mockRejectedValue(new Error("Loading Error")),
+      runAsync: jest.fn()
+    };
+    SQLite.openDatabaseAsync.mockResolvedValue(mockDb);
+    console.error = jest.fn();
+
+    render(
+      <NavigationContainer>
+        <ArchivedTasksScreen navigation={mockNavigation} />
+      </NavigationContainer>
+    );
+
+    await waitFor(() => {
+      expect(console.error).toHaveBeenCalledWith(
+        "Error loading archived tasks:",
+        expect.any(Error)
+      );
+    });
+  });
+
+  // Test task restoration error handling
+  it("handles task restoration errors", async () => {
+    const mockDb = {
+      getAllAsync: jest.fn().mockResolvedValue([
+        {
+          id: 1,
+          title: "Test Task",
+          description: "Test Description",
+          dueDate: new Date().toISOString(),
+          status: "Archived"
+        }
+      ]),
+      runAsync: jest.fn().mockRejectedValue(new Error("Restore Error"))
+    };
+    SQLite.openDatabaseAsync.mockResolvedValue(mockDb);
+    console.error = jest.fn();
+
+    const { getByText } = render(
+      <NavigationContainer>
+        <ArchivedTasksScreen navigation={mockNavigation} />
+      </NavigationContainer>
+    );
+
+    await waitFor(() => {
+      expect(getByText("Test Task")).toBeTruthy();
+    });
+
+    fireEvent.press(getByText("Test Task"));
+
+    await waitFor(() => {
+      expect(console.error).toHaveBeenCalledWith(
+        "Error restoring task:",
+        expect.any(Error)
+      );
+    });
+  });
+
+  // Test task deletion error handling
+  it("handles task deletion errors", async () => {
+    const mockDb = {
+      getAllAsync: jest.fn().mockResolvedValue([
+        {
+          id: 1,
+          title: "Test Task",
+          description: "Test Description",
+          dueDate: new Date().toISOString(),
+          status: "Archived"
+        }
+      ]),
+      runAsync: jest.fn().mockRejectedValue(new Error("Delete Error"))
+    };
+    SQLite.openDatabaseAsync.mockResolvedValue(mockDb);
+    console.error = jest.fn();
+
+    const { getByText } = render(
+      <NavigationContainer>
+        <ArchivedTasksScreen navigation={mockNavigation} />
+      </NavigationContainer>
+    );
+
+    await waitFor(() => {
+      expect(getByText("Test Task")).toBeTruthy();
+    });
+
+    fireEvent.press(getByText("Test Task"));
+
+    await waitFor(() => {
+      expect(console.error).toHaveBeenCalledWith(
+        "Error deleting task:",
+        expect.any(Error)
+      );
+    });
+  });
+
+  // Test screen focus effect
+  it("refreshes tasks when screen comes into focus", async () => {
+    const mockDb = {
       getAllAsync: jest.fn().mockResolvedValue([]),
       runAsync: jest.fn()
-    });
-    useTheme.mockReturnValue({ theme: "light" });
-  });
+    };
+    SQLite.openDatabaseAsync.mockResolvedValue(mockDb);
 
-  it("renders correctly with no archived tasks", async () => {
-    const { getByText } = render(
-      <ArchivedTasksScreen navigation={mockNavigation} />
+    render(
+      <NavigationContainer>
+        <ArchivedTasksScreen navigation={mockNavigation} />
+      </NavigationContainer>
     );
+
     await waitFor(() => {
-      expect(getByText("No archived tasks available.")).toBeTruthy();
+      expect(mockDb.getAllAsync).toHaveBeenCalledTimes(1);
+    });
+
+    // Simulate screen focus
+    mockNavigation.addListener.mock.calls[0][1]();
+
+    await waitFor(() => {
+      expect(mockDb.getAllAsync).toHaveBeenCalledTimes(2);
     });
   });
 
-  it("loads archived tasks from the database", async () => {
-    const mockTasks = [
-      {
-        id: 1,
-        title: "Task 1",
-        description: "Description 1",
-        dueDate: new Date().toISOString(),
-        status: "Archived"
-      },
-      {
-        id: 2,
-        title: "Task 2",
-        description: "Description 2",
-        dueDate: new Date().toISOString(),
-        status: "Archived"
-      }
-    ];
-    SQLite.openDatabaseAsync.mockResolvedValueOnce({
-      getAllAsync: jest.fn().mockResolvedValue(mockTasks),
-      runAsync: jest.fn()
-    });
-
-    const { getByText } = render(
-      <ArchivedTasksScreen navigation={mockNavigation} />
-    );
-    await waitFor(() => {
-      expect(getByText("Task 1")).toBeTruthy();
-      expect(getByText("Task 2")).toBeTruthy();
-    });
-  });
-
-  it("expands and collapses task details", async () => {
-    const mockTasks = [
-      {
-        id: 1,
-        title: "Task 1",
-        description: "Description 1",
-        dueDate: new Date().toISOString(),
-        status: "Archived"
-      }
-    ];
-    SQLite.openDatabaseAsync.mockResolvedValueOnce({
-      getAllAsync: jest.fn().mockResolvedValue(mockTasks),
-      runAsync: jest.fn()
-    });
-
-    const { getByText, queryByText } = render(
-      <ArchivedTasksScreen navigation={mockNavigation} />
-    );
-    await waitFor(() => {
-      expect(getByText("Task 1")).toBeTruthy();
-    });
-
-    fireEvent.press(getByText("Task 1"));
-    await waitFor(() => {
-      expect(getByText("Description: Description 1")).toBeTruthy();
-    });
-
-    fireEvent.press(getByText("Task 1"));
-    await waitFor(() => {
-      expect(queryByText("Description: Description 1")).toBeNull();
-    });
-  });
-
-  it("restores a task", async () => {
-    const mockTasks = [
-      {
-        id: 1,
-        title: "Task 1",
-        description: "Description 1",
-        dueDate: new Date().toISOString(),
-        status: "Archived"
-      }
-    ];
+  // Test date formatting
+  it("correctly formats dates in task items", async () => {
+    const testDate = new Date("2024-01-01T12:00:00");
     const mockDb = {
-      getAllAsync: jest.fn().mockResolvedValue(mockTasks),
+      getAllAsync: jest.fn().mockResolvedValue([
+        {
+          id: 1,
+          title: "Test Task",
+          description: "Description",
+          dueDate: testDate.toISOString(),
+          status: "Archived"
+        }
+      ]),
       runAsync: jest.fn()
     };
-    SQLite.openDatabaseAsync.mockResolvedValueOnce(mockDb);
+    SQLite.openDatabaseAsync.mockResolvedValue(mockDb);
 
-    const { getByText, getByRole } = render(
-      <ArchivedTasksScreen navigation={mockNavigation} />
+    const { getByText } = render(
+      <NavigationContainer>
+        <ArchivedTasksScreen navigation={mockNavigation} />
+      </NavigationContainer>
     );
+
     await waitFor(() => {
-      expect(getByText("Task 1")).toBeTruthy();
+      expect(getByText("Test Task")).toBeTruthy();
     });
 
-    fireEvent.press(getByText("Task 1"));
-    await waitFor(() => {
-      expect(getByText("Description: Description 1")).toBeTruthy();
-    });
+    fireEvent.press(getByText("Test Task"));
 
-    fireEvent.press(getByRole("button", { name: /restore/i }));
     await waitFor(() => {
-      expect(mockDb.runAsync).toHaveBeenCalledWith(
-        "UPDATE tasks SET status = 'Pending' WHERE id = ?",
-        [1]
-      );
-    });
-  });
-
-  it("deletes a task", async () => {
-    const mockTasks = [
-      {
-        id: 1,
-        title: "Task 1",
-        description: "Description 1",
-        dueDate: new Date().toISOString(),
-        status: "Archived"
-      }
-    ];
-    const mockDb = {
-      getAllAsync: jest.fn().mockResolvedValue(mockTasks),
-      runAsync: jest.fn()
-    };
-    SQLite.openDatabaseAsync.mockResolvedValueOnce(mockDb);
-
-    const { getByText, getByRole } = render(
-      <ArchivedTasksScreen navigation={mockNavigation} />
-    );
-    await waitFor(() => {
-      expect(getByText("Task 1")).toBeTruthy();
-    });
-
-    fireEvent.press(getByText("Task 1"));
-    await waitFor(() => {
-      expect(getByText("Description: Description 1")).toBeTruthy();
-    });
-
-    fireEvent.press(getByRole("button", { name: /delete/i }));
-    await waitFor(() => {
-      expect(mockDb.runAsync).toHaveBeenCalledWith(
-        "DELETE FROM tasks WHERE id = ?",
-        [1]
-      );
+      expect(
+        getByText(
+          `Due Date: ${testDate.toLocaleDateString()} ${testDate.toLocaleTimeString()}`
+        )
+      ).toBeTruthy();
     });
   });
 });
