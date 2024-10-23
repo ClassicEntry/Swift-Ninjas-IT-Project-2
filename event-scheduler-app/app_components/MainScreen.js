@@ -1157,7 +1157,7 @@ export function MainScreen() {
         />
       ) : view === "calendar" ? (
         <CalendarView
-          testID={`calendar-day-${date.toISOString().split("T")[0]}`}
+          testID="calendar-view"
           tasks={tasks}
           onUpdateTask={handleEditTask}
           onDeleteTask={handleDeleteTask}
