@@ -45,7 +45,16 @@
   "jest": {
     "preset": "jest-expo",
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|react-native-calendars|expo-notifications|app_components/ThemeContext|app_components/CalendarView|app_components/styles|app_components/SettingsScreen|app_components/TaskHistoryView|@testing-library/react|expo-notifications|expo-sqlite|expo-device|expo-status-bar|@react-native-picker/picker|@react-native-community/datetimepicker|react-native-gesture-handler/jestSetup|app_components/ThemeContext)"
+    ],
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "**/*.{ts,tsx,js,jsx}",
+      "!**/coverage/**",
+      "!**/node_modules/**",
+      "!**/babel.config.js",
+      "!**/expo-env.d.ts",
+      "!**/.expo/**"
     ]
   },
   "private": true

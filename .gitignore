@@ -8,7 +8,7 @@ node_modules/
 dist/
 web-build/
 ios
-
+coverage
 # Native
 *.orig.*
 *.jks
